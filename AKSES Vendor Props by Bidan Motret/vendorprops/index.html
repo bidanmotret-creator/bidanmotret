@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Akses Info Perlengkapan & HPP Produk Pendukung — Bidan Motret</title>
+<style>
+:root{
+  --bg:#f5f7fb; --card:#ffffff; --ink:#1f2a44; --muted:#64748b;
+  --line:#e3e8f2; --clay:#d6577f; --clay-dark:#2f4a7a; --sand:#f6c8d9;
+  --sage:#3f9d82; --gold:#7a93c2; --soft:#fdeaf1;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,Arial,sans-serif}
+button,input,select{font:inherit}
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,253,251,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav{max-width:1180px;margin:auto;padding:15px 22px;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+.brand{font-weight:900;letter-spacing:.06em;font-size:14px}.brand span{color:var(--clay)}
+.tabs-top{display:flex;gap:6px;flex-wrap:wrap}
+.tab-btn{border:1px solid var(--line);background:var(--card);padding:9px 16px;border-radius:9px;color:var(--muted);cursor:pointer;font-weight:700;font-size:13px}
+.tab-btn.active{background:var(--clay-dark);border-color:var(--clay-dark);color:#fff}
+.status{font-size:11px;color:var(--muted)}
+.status.ok{color:var(--sage)}
+.status.err{color:#a2453f}
+
+.container{max-width:1180px;margin:auto;padding:28px 22px 80px}
+.view{display:none}
+.view.active{display:block}
+
+/* --- LIBRARY VIEW --- */
+.hero{padding:10px 0 25px;display:grid;grid-template-columns:1.3fr .7fr;gap:25px;align-items:end}
+.badge{display:inline-block;background:var(--soft);color:var(--clay);padding:7px 12px;border-radius:30px;font-size:12px;font-weight:800;letter-spacing:.02em}
+h1{font-family:Georgia,serif;font-weight:500;font-size:clamp(30px,4vw,46px);line-height:1.08;margin:14px 0 8px}
+.hero p{color:var(--muted);font-size:15px;max-width:640px;margin:0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.stat strong{font-size:20px;display:block}.stat span{font-size:11px;color:var(--muted)}
+
+.toolbar{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;grid-template-columns:1.6fr 1fr 1fr auto;gap:10px;margin:10px 0 22px}
+input,select{width:100%;border:1px solid var(--line);background:#fff;padding:11px 13px;border-radius:10px;color:var(--ink);outline:none}
+input:focus,select:focus{border-color:var(--clay)}
+.reset{border:0;background:var(--ink);color:#fff;border-radius:10px;padding:0 16px;cursor:pointer;font-weight:700}
+.category-tabs{margin-bottom:18px}
+.category-tabs select{max-width:280px;font-weight:700;color:var(--clay-dark)}
+
+.layout{display:grid;grid-template-columns:1fr 300px;gap:20px}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.section-head h2{font-family:Georgia,serif;font-weight:500;margin:0;font-size:24px}
+.count{color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.item{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+.photo{position:relative;height:150px;background:linear-gradient(135deg,#f6d9e6,#fbe4ec);display:flex;align-items:center;justify-content:center;font-size:42px;overflow:hidden}
+.photo img{width:100%;height:100%;object-fit:cover}
+.check-badge{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.92);cursor:pointer;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;color:var(--clay-dark);box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.check-badge.done{background:var(--sage);color:#fff;border-color:var(--sage)}
+.content{padding:14px;display:flex;flex-direction:column;flex:1}
+.tag-row{margin-bottom:6px}
+.item h3{margin:0 0 4px;font-size:16px;line-height:1.3}
+.desc{color:var(--muted);font-size:12.5px;margin:0 0 8px}
+.vendor-line{font-size:11.5px;color:var(--muted);margin:0 0 8px}
+.tag{display:inline-block;padding:4px 8px;border-radius:8px;background:#eef1fa;font-size:10.5px;font-weight:800;margin:2px 3px 2px 0}
+.tag.wajib{background:#e7eee3;color:var(--sage)}.tag.optional{background:#e3ebfa;color:#2f4a7a}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto;padding-top:10px;border-top:1px solid var(--line);font-size:12px}
+.price{font-weight:800;color:var(--clay);white-space:nowrap}
+.link{color:var(--clay);font-weight:700;text-decoration:none;white-space:nowrap}
+.link.muted{color:var(--muted);font-weight:600}
+.sidebar{position:sticky;top:150px;height:max-content}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
+.panel h3{margin:0 0 12px;font-family:Georgia,serif;font-weight:500;font-size:19px}
+.progress{height:8px;background:#e6ebf5;border-radius:10px;overflow:hidden}.progress i{display:block;height:100%;background:var(--clay);width:0}
+.budget{font-size:26px;font-weight:900;margin:5px 0}
+.small{font-size:11.5px;color:var(--muted)}
+.list{padding:0;margin:12px 0 0;list-style:none}.list li{padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.tip{background:#fdeaf1;border-radius:12px;padding:12px;font-size:12.5px;color:#2a3550}
+.empty{grid-column:1/-1;text-align:center;padding:45px 20px;background:var(--card);border:1px dashed var(--line);border-radius:16px;color:var(--muted)}
+
+/* --- HPP VIEW --- */
+.hpp-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:22px;align-items:start}
+.hpp-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
+.hpp-card h3{margin:0 0 4px;font-family:Georgia,serif;font-weight:500;font-size:20px}
+.hpp-card .sub{color:var(--muted);font-size:12.5px;margin:0 0 16px}
+.field-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.field-row:last-child{border-bottom:0}
+.field-row label{font-size:13px}
+.field-row input{width:130px;text-align:right}
+.mode-tabs{display:flex;gap:6px;margin-bottom:14px}
+.hpp-summary{background:var(--ink);color:#eef2fa;border-radius:16px;padding:22px}
+.hpp-summary .eyebrow{font-size:11px;color:var(--sand);font-weight:800;letter-spacing:.04em;margin-bottom:6px}
+.hpp-line{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.12);font-size:13.5px}
+.hpp-line.total{border-bottom:0;padding-top:14px;font-size:17px;font-weight:800}
+.hpp-line span:last-child{font-variant-numeric:tabular-nums}
+.margin-badge{display:inline-block;margin-top:10px;background:var(--sage);color:#fff;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700}
+.combo-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12.5px}
+.combo-table th,.combo-table td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
+.combo-table th{color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+.combo-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+.addbtn{border:1px dashed var(--line);background:transparent;border-radius:10px;padding:9px 14px;width:100%;color:var(--muted);cursor:pointer;font-weight:700;font-size:12.5px;margin-top:6px}
+
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:35px}
+
+/* --- VERIFY BANNER --- */
+.verify-banner{background:#f6e2c9;color:#8a5a1f;padding:10px 22px;text-align:center;font-size:13px;font-weight:600}
+.verify-banner a{color:#2f4a7a;font-weight:800;text-decoration:none;margin-left:6px}
+
+/* --- BUDGET RECOMMENDER --- */
+.budget-rec-card{background:linear-gradient(135deg,#2f4a7a,#d6577f);color:#fff;border-radius:16px;padding:18px 20px;margin-bottom:18px}
+.budget-rec-card h3{margin:0 0 4px;font-family:Georgia,serif;font-weight:500;font-size:19px}
+.budget-rec-card .sub{color:#eef2fa;font-size:12.5px;margin:0 0 12px}
+.budget-rec-row{display:flex;gap:10px;flex-wrap:wrap}
+.budget-rec-row input{flex:1;min-width:160px;border:0;border-radius:10px;padding:11px 13px;font:inherit}
+#budgetRecResult{margin-top:14px}
+.budget-rec-item{display:flex;justify-content:space-between;gap:10px;background:rgba(255,255,255,.12);border-radius:10px;padding:9px 12px;margin-bottom:6px;font-size:13px}
+.budget-rec-total{display:flex;justify-content:space-between;font-weight:800;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.3)}
+.budget-rec-empty{font-size:13px;color:#eef2fa}
+
+/* --- GATE (LOGIN RINGAN) --- */
+.gate-overlay{position:fixed;inset:0;background:rgba(63,48,42,.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.gate-overlay.hidden{display:none}
+.gate-card{background:var(--card);border-radius:20px;padding:28px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.gate-title{font-family:Georgia,serif;font-weight:500;font-size:24px;margin:12px 0 8px}
+.gate-sub{color:var(--muted);font-size:13px;margin:0 0 18px;line-height:1.5}
+.gate-card input{width:100%;border:1px solid var(--line);background:#fff;padding:11px 13px;border-radius:10px;color:var(--ink);outline:none;margin-bottom:2px;font:inherit}
+.gate-card input:focus{border-color:var(--clay)}
+
+/* --- VENDOR WA BUTTON --- */
+.link-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.link.wa{color:var(--sage);font-weight:700}
+
+/* --- ADMIN PANEL --- */
+.admin-gate{max-width:360px;margin:60px auto;text-align:center}
+.admin-tabs{display:flex;gap:8px;margin-bottom:18px}
+.admin-tab-btn{border:1px solid var(--line);background:var(--card);padding:9px 16px;border-radius:9px;color:var(--muted);cursor:pointer;font-weight:700;font-size:13px}
+.admin-tab-btn.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.admin-q-item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;grid-template-columns:90px 1fr;gap:14px;margin-bottom:12px}
+.admin-q-item img{width:90px;height:90px;object-fit:cover;border-radius:10px;background:#eee}
+.admin-q-item textarea{width:100%;min-height:60px;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;margin-top:6px}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-big{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center}
+.stat-big strong{font-size:26px;display:block;color:var(--clay-dark)}
+.stat-big span{font-size:11.5px;color:var(--muted)}
+.cat-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12.5px}
+.cat-bar-row .label{width:150px;flex-shrink:0;color:var(--muted)}
+.cat-bar-track{flex:1;height:10px;background:#e6ebf5;border-radius:10px;overflow:hidden}
+.cat-bar-fill{height:100%;background:var(--clay)}
+@media(max-width:700px){ .stat-grid{grid-template-columns:1fr 1fr} .admin-q-item{grid-template-columns:60px 1fr} .admin-q-item img{width:60px;height:60px} }
+
+/* --- TANYA PROPS VIEW --- */
+.ask-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:22px;align-items:start}
+.ask-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+.ask-card h3{margin:0 0 4px;font-family:Georgia,serif;font-weight:500;font-size:20px}
+.ask-card .sub{color:var(--muted);font-size:12.5px;margin:0 0 16px}
+.dropzone{border:1.5px dashed var(--line);border-radius:14px;padding:20px;text-align:center;cursor:pointer;background:#f4f6fb;transition:.15s}
+.dropzone:hover{border-color:var(--clay)}
+.dropzone.has-image{padding:10px}
+.dropzone img{max-width:100%;max-height:220px;border-radius:10px;display:block;margin:auto}
+.dropzone .hint{font-size:12.5px;color:var(--muted)}
+.dropzone .hint b{color:var(--clay-dark)}
+textarea{width:100%;border:1px solid var(--line);background:#fff;padding:11px 13px;border-radius:10px;color:var(--ink);outline:none;font:inherit;resize:vertical;min-height:80px}
+textarea:focus{border-color:var(--clay)}
+.field-label{font-size:12.5px;font-weight:700;color:var(--ink);margin:14px 0 6px;display:block}
+.field-label:first-child{margin-top:0}
+.submitbtn{border:0;background:var(--clay-dark);color:#fff;border-radius:10px;padding:12px 18px;font-weight:700;cursor:pointer;width:100%;margin-top:14px;font-size:14px}
+.submitbtn:disabled{opacity:.5;cursor:not-allowed}
+.compress-note{font-size:11.5px;color:var(--muted);margin-top:6px}
+.qa-list{display:grid;gap:12px}
+.qa-item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;grid-template-columns:76px 1fr;gap:12px}
+.qa-item img{width:76px;height:76px;object-fit:cover;border-radius:10px;background:#eee}
+.qa-item .q-text{font-size:13.5px;margin:0 0 6px}
+.qa-item .q-meta{font-size:11px;color:var(--muted);margin-bottom:6px}
+.qa-badge{display:inline-block;font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:20px;background:#e3ebfa;color:#2f4a7a}
+.qa-badge.answered{background:#e7eee3;color:var(--sage)}
+.qa-answer{margin-top:8px;background:#fdeaf1;border-radius:10px;padding:9px 11px;font-size:12.5px;color:#2a3550}
+.checkbtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:11.5px;font-weight:700;cursor:pointer;color:var(--clay-dark)}
+
+/* --- KALKULATOR HARGA VIEW --- */
+.calc-table{width:100%;border-collapse:collapse;font-size:13px}
+.calc-table th,.calc-table td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+.calc-table th{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+.margin-pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:800}
+.margin-pill.positive{background:#e7eee3;color:var(--sage)}
+.margin-pill.negative{background:#f3dede;color:#a2453f}
+.calc-table td.factor{font-weight:700;width:170px}
+.calc-table td.desc-col{color:var(--muted);font-size:12px;width:220px}
+.calc-table td.kontribusi{width:70px;font-weight:700;color:var(--clay-dark)}
+.calc-table select{min-width:190px}
+.dasar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.dasar-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.dasar-card label{font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px}
+.dasar-card input{text-align:right}
+.result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.result-card{background:var(--ink);color:#eef2fa;border-radius:14px;padding:16px;text-align:center}
+.result-card .tema-label{font-size:11px;color:var(--sand);font-weight:800;letter-spacing:.03em;margin-bottom:6px}
+.result-card .tema-price{font-size:19px;font-weight:800}
+.formula-box{background:#f4f6fb;border:1px solid var(--line);border-radius:12px;padding:14px;font-size:12.5px;color:var(--muted);margin-bottom:16px}
+.formula-box code{color:var(--clay-dark);font-weight:700}
+
+@media(max-width:900px){
+  .hero,.layout,.hpp-grid,.ask-grid{grid-template-columns:1fr}
+  .sidebar{position:static}
+  .toolbar{grid-template-columns:1fr 1fr}
+  .reset{padding:12px}
+  .nav{flex-direction:column;align-items:stretch}
+  .dasar-grid,.result-grid{grid-template-columns:1fr 1fr}
+  .calc-table{display:block;overflow-x:auto;white-space:nowrap}
+}
+@media(max-width:560px){
+  /* Nav tab utama (Library/HPP/Tanya/Kalkulator): scroll horizontal, tidak wrap/tumpuk */
+  .tabs-top{flex-wrap:nowrap;overflow-x:auto;gap:6px;width:100%;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+  .tab-btn{flex:0 0 auto;padding:9px 12px;font-size:12px;white-space:nowrap}
+  .status{width:100%}
+
+  .stats{grid-template-columns:1fr 1fr 1fr}.stat{padding:10px 8px}.stat strong{font-size:16px}
+  .toolbar{grid-template-columns:1fr}
+  .category-tabs select{max-width:none;width:100%}
+
+  /* Tampilan HP: grid produk 3 kolom, kartu ringkas, checkbox tidak menutupi nama */
+  .grid{grid-template-columns:repeat(3,1fr);gap:8px}
+  .item{border-radius:12px}
+  .photo{height:70px;font-size:22px}
+  .check-badge{width:22px;height:22px;font-size:11px;top:5px;right:5px}
+  .content{padding:7px}
+  .item h3{font-size:10.5px;line-height:1.25;margin:0 0 3px}
+  .desc,.vendor-line{display:none}
+  .tag-row{margin-bottom:3px}
+  .tag{font-size:7.5px;padding:2px 5px;margin:0 2px 2px 0;border-radius:5px}
+  .meta{flex-direction:column;align-items:flex-start;gap:2px;margin-top:5px;padding-top:5px}
+  .price{font-size:10.5px}
+  .link{font-size:9px}
+
+  .qa-item{grid-template-columns:56px 1fr}.qa-item img{width:56px;height:56px}
+  .dasar-grid,.result-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:380px){
+  .grid{grid-template-columns:repeat(2,1fr)} /* layar sangat sempit: 2 kolom biar tidak terlalu padat */
+}
+</style>
+</head>
+<body>
+
+<!-- ============ GATE: DAFTAR DULU SEBELUM AKSES ============ -->
+<div id="gateOverlay" class="gate-overlay">
+  <div class="gate-card">
+    <span class="badge">AKSES PRODUK DIGITAL</span>
+    <h2 class="gate-title">Masuk untuk Lanjut</h2>
+    <p class="gate-sub">Isi data singkat ini supaya checklist dan pertanyaan Anda tersimpan otomatis, dan bisa dibuka lagi kapan saja dari HP/laptop manapun.</p>
+    <label class="field-label">Nama</label>
+    <input type="text" id="gateName" placeholder="Nama Anda">
+    <label class="field-label">No. WhatsApp</label>
+    <input type="tel" id="gatePhone" placeholder="08xxxxxxxxxx">
+    <label class="field-label">Email</label>
+    <input type="email" id="gateEmail" placeholder="nama@email.com">
+    <button class="submitbtn" id="gateSubmit" onclick="submitGate()">Masuk & Mulai</button>
+    <div class="compress-note" id="gateStatus"></div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="nav">
+    <div class="brand">BIDAN <span>MOTRET</span></div>
+    <div class="tabs-top">
+      <button class="tab-btn active" id="btn-library" onclick="showView('library')">Library Perlengkapan</button>
+      <button class="tab-btn" id="btn-hpp" onclick="showView('hpp')">HPP Produk Pendukung</button>
+      <button class="tab-btn" id="btn-ask" onclick="showView('ask')">Tanya Props</button>
+      <button class="tab-btn" id="btn-calc" onclick="showView('calc')">Kalkulator Harga Foto Bayi</button>
+      <button class="tab-btn" id="btn-admin" onclick="showView('admin')" style="display:none">Admin</button>
+    </div>
+    <div class="status" id="dataStatus">Memuat data…</div>
+  </div>
+</div>
+
+<div id="verifyBanner" class="verify-banner" style="display:none">
+  ⚠️ Akun Anda belum terverifikasi sebagai pembeli. Sudah bayar tapi belum bisa akses penuh?
+  <a id="verifyWaLink" href="#" target="_blank" rel="noopener">Konfirmasi via WhatsApp →</a>
+</div>
+
+<main class="container">
+
+  <!-- ============ VIEW 1: LIBRARY ============ -->
+  <section class="view active" id="view-library">
+    <div class="hero">
+      <div>
+        <span class="badge">AKSES PRODUK DIGITAL</span>
+        <h1>Perlengkapan &amp; Props<br>Newborn Photo</h1>
+        <p>Jelajahi, cari, dan filter perlengkapan sesuai prioritas dan budget Anda. Tandai
+          barang yang sudah dimiliki — sisanya otomatis masuk ke wishlist.</p>
+      </div>
+      <div class="stats">
+        <div class="stat"><strong id="totalItems">0</strong><span>Total item</span></div>
+        <div class="stat"><strong id="checkedItems">0</strong><span>Sudah dimiliki</span></div>
+        <div class="stat"><strong id="budget">Rp0</strong><span>Estimasi wishlist</span></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Cari perlengkapan, props, backdrop...">
+      <select id="priority">
+        <option value="all">Semua prioritas</option>
+        <option value="wajib">Prioritas utama</option>
+        <option value="optional">Tambahan</option>
+      </select>
+      <select id="budgetFilter">
+        <option value="all">Semua budget</option>
+        <option value="low">Di bawah Rp250 ribu</option>
+        <option value="mid">Rp250–750 ribu</option>
+        <option value="high">Di atas Rp750 ribu</option>
+      </select>
+      <button class="reset" onclick="resetFilters()">Reset</button>
+    </div>
+
+    <div class="budget-rec-card">
+      <h3>🎯 Rekomendasi Sesuai Budget</h3>
+      <p class="sub">Masukkan budget Anda, sistem akan menyusun kombinasi item prioritas (dimulai dari yang wajib) yang paling pas dengan budget itu.</p>
+      <div class="budget-rec-row">
+        <input type="number" id="budgetRecInput" placeholder="Contoh: 3000000">
+        <button class="submitbtn" style="width:auto;margin-top:0" onclick="recommendByBudget()">Susun Rekomendasi</button>
+      </div>
+      <div id="budgetRecResult"></div>
+    </div>
+
+    <div class="category-tabs" id="tabs"></div>
+
+    <div class="layout">
+      <section>
+        <div class="section-head">
+          <h2>Library Item</h2>
+          <div class="count" id="resultCount"></div>
+        </div>
+        <div class="grid" id="items"></div>
+      </section>
+
+      <aside class="sidebar">
+        <div class="panel">
+          <h3>Checklist Saya</h3>
+          <div class="progress"><i id="progressBar"></i></div>
+          <p class="small"><span id="progressText">0</span>% item sudah ditandai dimiliki.</p>
+          <ul class="list" id="ownedList"></ul>
+        </div>
+        <div class="panel">
+          <h3>Wishlist</h3>
+          <div class="budget" id="wishlistBudget">Rp0</div>
+          <div class="small">Estimasi dari item yang belum dimiliki dan terlihat pada filter saat ini.</div>
+        </div>
+        <div class="panel">
+          <div class="tip"><strong>💡 Prinsip belanja:</strong><br>Prioritaskan kebutuhan yang menunjang workflow. Props bisa ditambah bertahap sesuai gaya foto, budget, dan permintaan klien.</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ VIEW 2: HPP PRODUK PENDUKUNG ============ -->
+  <section class="view" id="view-hpp">
+    <div class="hero" style="grid-template-columns:1fr">
+      <div>
+        <span class="badge">DAFTAR HARGA</span>
+        <h1>HPP Produk Pendukung<br>(Cetak Foto &amp; Bingkai)</h1>
+        <p>Daftar produk pendukung sesi newborn photo beserta HPP, harga jual, profit,
+          dan margin — datanya sinkron langsung dari sheet <b>HPP</b> Anda.</p>
+      </div>
+    </div>
+
+    <div class="hpp-card" style="margin-bottom:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div>
+          <h3>Katalog Produk</h3>
+          <p class="sub">Cari nama atau kode produk. Klik header kolom untuk urutkan.</p>
+        </div>
+        <input type="search" id="hppCatalogSearch" placeholder="Cari produk atau kode..." style="max-width:260px">
+      </div>
+      <div style="overflow-x:auto">
+        <table class="calc-table" id="hppCatalogTable">
+          <thead>
+            <tr>
+              <th style="cursor:pointer" onclick="sortHppCatalog('name')">Nama Produk</th>
+              <th style="cursor:pointer" onclick="sortHppCatalog('code')">Kode Produk</th>
+              <th style="cursor:pointer" onclick="sortHppCatalog('hpp')">HPP</th>
+              <th style="cursor:pointer" onclick="sortHppCatalog('jual')">Jual</th>
+              <th style="cursor:pointer" onclick="sortHppCatalog('profit')">Profit</th>
+              <th style="cursor:pointer" onclick="sortHppCatalog('margin')">Margin</th>
+              <th>Keterangan</th>
+            </tr>
+          </thead>
+          <tbody id="hppCatalogBody"></tbody>
+        </table>
+      </div>
+      <div class="count" id="hppCatalogCount" style="margin-top:8px"></div>
+    </div>
+
+    <details class="hpp-card" style="margin-bottom:18px">
+      <summary style="cursor:pointer;font-family:Georgia,serif;font-size:19px;color:var(--ink)">Kalkulator Manual (opsional)</summary>
+      <p class="sub" style="margin-top:10px">Kalau ada produk baru yang belum masuk katalog di atas, hitung dulu HPP-nya di sini secara manual.</p>
+
+      <div class="hpp-grid" style="margin-top:14px">
+        <div>
+          <div class="hpp-card">
+            <h3>Komponen Biaya per Unit</h3>
+            <p class="sub">Sesuaikan angka dengan harga vendor/bahan Anda. Semua nilai dalam Rupiah.</p>
+
+            <div class="field-row"><label>Cetak foto (per lembar, ukuran standar)</label><input type="number" id="c_print" value="15000"></div>
+            <div class="field-row"><label>Bingkai foto</label><input type="number" id="c_frame" value="45000"></div>
+            <div class="field-row"><label>Mounting / laminasi</label><input type="number" id="c_mount" value="8000"></div>
+            <div class="field-row"><label>Packaging (box/plastik/kartu ucapan)</label><input type="number" id="c_pack" value="7000"></div>
+            <div class="field-row"><label>Ongkos kirim internal / kurir</label><input type="number" id="c_ship" value="10000"></div>
+            <div class="field-row"><label>Biaya operasional lain (listrik, tinta, dll)</label><input type="number" id="c_ops" value="5000"></div>
+          </div>
+
+          <div class="hpp-card">
+            <h3>Target Margin</h3>
+            <p class="sub">Pilih margin yang ingin diterapkan pada produk pendukung ini.</p>
+            <div class="field-row"><label>Margin keuntungan (%)</label><input type="number" id="c_margin" value="40"></div>
+            <div class="field-row"><label>Jumlah unit dalam 1 paket (mis. 3 foto + 1 bingkai)</label><input type="number" id="c_qty" value="1"></div>
+          </div>
+
+          <div class="hpp-card">
+            <h3>Kombinasi Paket Siap Pakai</h3>
+            <p class="sub">Beberapa contoh kombinasi — HPP dan saran harga jual dihitung otomatis dari komponen di atas.</p>
+            <table class="combo-table">
+              <thead><tr><th>Paket</th><th class="num">HPP</th><th class="num">Harga Jual (@margin)</th></tr></thead>
+              <tbody id="comboBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="sidebar">
+          <div class="hpp-summary">
+            <div class="eyebrow">RINGKASAN HPP — 1 UNIT</div>
+            <div class="hpp-line"><span>Cetak foto</span><span id="s_print">Rp0</span></div>
+            <div class="hpp-line"><span>Bingkai</span><span id="s_frame">Rp0</span></div>
+            <div class="hpp-line"><span>Mounting / laminasi</span><span id="s_mount">Rp0</span></div>
+            <div class="hpp-line"><span>Packaging</span><span id="s_pack">Rp0</span></div>
+            <div class="hpp-line"><span>Ongkos kirim internal</span><span id="s_ship">Rp0</span></div>
+            <div class="hpp-line"><span>Operasional lain</span><span id="s_ops">Rp0</span></div>
+            <div class="hpp-line total"><span>Total HPP</span><span id="s_hpp">Rp0</span></div>
+            <div class="hpp-line total" style="color:#f6b8cf"><span>Harga jual disarankan</span><span id="s_sell">Rp0</span></div>
+            <span class="margin-badge" id="s_marginlabel">Margin 40%</span>
+          </div>
+          <div class="panel" style="margin-top:14px">
+            <div class="tip"><strong>💡 Catatan:</strong><br>HPP produk pendukung sebaiknya dihitung terpisah dari harga jasa foto. Ini membantu Anda melihat margin riil tiap komponen, terutama saat menawarkan paket bundling.</div>
+          </div>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ VIEW 3: TANYA PROPS INI BELI DIMANA ============ -->
+  <section class="view" id="view-ask">
+    <div class="hero" style="grid-template-columns:1fr">
+      <div>
+        <span class="badge">TANYA ADMIN</span>
+        <h1>Props Ini Beli Dimana?</h1>
+        <p>Lihat props atau perlengkapan yang menarik tapi belum tahu sumbernya? Upload
+          fotonya, tulis pertanyaan Anda, dan tim Bidan Motret akan membantu menjawab
+          beserta rekomendasi tempat belinya.</p>
+      </div>
+    </div>
+
+    <div class="ask-grid">
+      <div class="ask-card">
+        <h3>Ajukan Pertanyaan</h3>
+        <p class="sub">Gambar akan dikompres otomatis di browser Anda sebelum dikirim, supaya tetap ringan.</p>
+
+        <span class="field-label">Foto Props</span>
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('imgInput').click()">
+          <div id="dropzoneInner">
+            <div class="hint">📷 Klik untuk pilih / ambil foto props<br><b>JPG/PNG</b>, otomatis dikompres</div>
+          </div>
+          <input type="file" id="imgInput" accept="image/*" style="display:none">
+        </div>
+        <div class="compress-note" id="compressNote"></div>
+
+        <span class="field-label">Pertanyaan Anda</span>
+        <textarea id="askText" placeholder="Contoh: Props kayu bentuk bulan ini beli dimana ya? Ada warna lain?"></textarea>
+
+        <button class="submitbtn" id="askSubmit" onclick="submitAsk()">Kirim Pertanyaan</button>
+        <div class="compress-note" id="askStatus"></div>
+      </div>
+
+      <div>
+        <div class="ask-card">
+          <h3>Pertanyaan Saya</h3>
+          <p class="sub">Status dan jawaban akan tampil di sini. Tekan "Cek Jawaban" untuk memuat balasan terbaru dari admin.</p>
+          <div class="qa-list" id="qaList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VIEW 4: KALKULATOR HARGA FOTO BAYI ============ -->
+  <section class="view" id="view-calc">
+    <div class="hero" style="grid-template-columns:1fr">
+      <div>
+        <span class="badge">TOOLS PRICING</span>
+        <h1>Kalkulator Merancang<br>Harga Foto Bayi</h1>
+        <p>Pilih skor tiap faktor sesuai kondisi bisnis Anda saat ini. Harga akhir akan
+          dihitung otomatis untuk 4 pilihan jumlah tema.</p>
+      </div>
+    </div>
+
+    <div class="formula-box">
+      Rumus: <code>Harga Akhir = Σ ( Harga Dasar × Kontribusi% ÷ 100 × Skor ÷ 100 )</code> — dijumlahkan dari seluruh faktor di bawah, untuk masing-masing pilihan Harga Dasar (1–4 tema).
+    </div>
+
+    <div class="hpp-card" style="margin-bottom:18px">
+      <h3>Harga Dasar per Jumlah Tema</h3>
+      <p class="sub">Ubah sesuai harga dasar jasa foto Anda.</p>
+      <div class="dasar-grid">
+        <div class="dasar-card"><label>1 Tema</label><input type="number" id="hd1" value="1500000"></div>
+        <div class="dasar-card"><label>2 Tema</label><input type="number" id="hd2" value="2000000"></div>
+        <div class="dasar-card"><label>3 Tema</label><input type="number" id="hd3" value="2500000"></div>
+        <div class="dasar-card"><label>4 Tema</label><input type="number" id="hd4" value="3000000"></div>
+      </div>
+    </div>
+
+    <div class="hpp-card" style="overflow-x:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div>
+          <h3>Faktor Penentu Harga</h3>
+          <p class="sub">Pilih skor sesuai kondisi Anda di setiap faktor (4 tingkat per faktor). Total kontribusi = 100%.</p>
+        </div>
+        <button class="reset" style="flex-shrink:0" onclick="resetCalcFactors()">Reset ke bawaan</button>
+      </div>
+      <table class="calc-table">
+        <thead><tr><th>Faktor</th><th>Deskripsi</th><th>Kontribusi</th><th>Skor</th></tr></thead>
+        <tbody id="calcFactorBody"></tbody>
+      </table>
+    </div>
+
+    <div class="hpp-card">
+      <h3>Rekomendasi Harga</h3>
+      <p class="sub">Harga akhir untuk tiap pilihan jumlah tema, berdasarkan skor yang dipilih di atas.</p>
+      <div class="result-grid" id="calcResults"></div>
+    </div>
+  </section>
+
+  <!-- ============ VIEW 5: ADMIN ============ -->
+  <section class="view" id="view-admin">
+    <div id="adminGateBox" class="admin-gate">
+      <span class="badge">AREA ADMIN</span>
+      <h2 style="font-family:Georgia,serif;font-weight:500;margin:14px 0">Masuk sebagai Admin</h2>
+      <input type="password" id="adminPass" placeholder="Passcode admin" style="width:100%;border:1px solid var(--line);padding:11px 13px;border-radius:10px;margin-bottom:10px">
+      <button class="submitbtn" onclick="adminLogin()">Masuk</button>
+      <div class="compress-note" id="adminLoginStatus"></div>
+    </div>
+
+    <div id="adminContent" style="display:none">
+      <div class="hero" style="grid-template-columns:1fr">
+        <div>
+          <span class="badge">AREA ADMIN</span>
+          <h1>Dashboard Admin</h1>
+          <p>Kelola pertanyaan "Tanya Props" dan pantau ringkasan aktivitas pengguna.</p>
+        </div>
+      </div>
+
+      <div class="admin-tabs">
+        <button class="admin-tab-btn active" id="admtab-inbox" onclick="showAdminTab('inbox')">Inbox Tanya Props</button>
+        <button class="admin-tab-btn" id="admtab-analytics" onclick="showAdminTab('analytics')">Analitik</button>
+      </div>
+
+      <div id="adminview-inbox">
+        <div id="adminQList"></div>
+      </div>
+
+      <div id="adminview-analytics" style="display:none">
+        <div class="stat-grid" id="analyticsStats"></div>
+        <div class="hpp-card">
+          <h3>Item Terbanyak per Kategori</h3>
+          <p class="sub">Menunjukkan jumlah item pada tiap kategori di Library — bisa jadi acuan kategori mana yang paling lengkap/kurang.</p>
+          <div id="categoryChart"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer id="dataFooter">
+    Data perlengkapan &amp; komponen HPP diambil dari Google Spreadsheet melalui Apps Script.
+    Jika koneksi tidak tersedia, halaman ini menampilkan data contoh secara otomatis.
+  </footer>
+</main>
+
+<script>
+/* =========================================================================
+   SUMBER DATA — GOOGLE SHEETS via APPS SCRIPT (metode JSONP)
+   =========================================================================
+   Kenapa JSONP, bukan fetch()?
+   Halaman ini sering ditempel di platform seperti Scalev/Tribelio yang
+   menerapkan Content-Security-Policy sendiri pada domain mereka. CSP itu
+   membatasi 'connect-src' (dipakai oleh fetch/XHR) ke daftar domain
+   tertentu saja, dan biasanya TIDAK bisa ditambah oleh kita karena
+   dikontrol oleh platform, bukan oleh halaman ini — itulah sebab error
+   "Refused to connect... violates Content Security Policy" saat memakai
+   fetch() ke script.google.com.
+   JSONP memuat data lewat tag <script src="..."> (bukan fetch), yang
+   diatur oleh 'script-src', bukan 'connect-src' — sehingga tetap bisa
+   berjalan meski platform membatasi connect-src.
+
+   1. Buat Google Spreadsheet dengan 2 sheet: "Items" dan "HPPComponents".
+   2. Di Extensions > Apps Script, buat Web App dengan kode berikut:
+
+      function doGet(e) {
+        var callback = e.parameter.callback;
+        var result;
+        if (e.parameter.action === 'getAnswer') {
+          result = getAnswerById(e.parameter.id);
+        } else {
+          var ss = SpreadsheetApp.getActiveSpreadsheet();
+          result = {
+            items: sheetToJson(ss.getSheetByName('Items')),
+            hpp:   sheetToJson(ss.getSheetByName('HPPComponents'))
+          };
+        }
+        var text = JSON.stringify(result);
+        if (callback) {
+          return ContentService.createTextOutput(callback + '(' + text + ');')
+            .setMimeType(ContentService.MimeType.JAVASCRIPT);
+        }
+        return ContentService.createTextOutput(text).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      function getAnswerById(id) {
+        var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('PropsQuestions');
+        var rows = sheet.getDataRange().getValues();
+        for (var i = 1; i < rows.length; i++) {
+          if (rows[i][0] === id) {
+            return { found: true, status: rows[i][5], answer: rows[i][4] };
+          }
+        }
+        return { found: false };
+      }
+
+      function doPost(e) {
+        // Data dikirim lewat form (bukan fetch) supaya tidak kena CSP juga —
+        // lihat submitAsk() di bawah. Isinya ada di e.parameter.payload.
+        var data = JSON.parse(e.parameter.payload);
+        var ss = SpreadsheetApp.getActiveSpreadsheet();
+        var sheet = ss.getSheetByName('PropsQuestions');
+        var folder = DriveApp.getFolderById('ISI_FOLDER_ID_DRIVE');
+        var blob = Utilities.newBlob(
+          Utilities.base64Decode(data.image.split(',')[1]), 'image/jpeg', data.id + '.jpg'
+        );
+        var file = folder.createFile(blob);
+        sheet.appendRow([data.id, new Date(), data.question, file.getUrl(), '', 'Menunggu jawaban']);
+        return ContentService.createTextOutput('ok');
+      }
+
+      function sheetToJson(sheet){
+        var data = sheet.getDataRange().getValues();
+        var headers = data.shift();
+        return data.map(function(row){
+          var obj = {};
+          headers.forEach(function(h,i){ obj[h] = row[i]; });
+          return obj;
+        });
+      }
+
+   3. Deploy > New deployment > Web app > Execute as: Me, Access: Anyone.
+   4. Tempel URL Web App di APPS_SCRIPT_URL (dan ASK_APPS_SCRIPT_URL, bisa
+      sama) di bawah ini.
+   Jika URL kosong atau gagal dimuat, halaman otomatis memakai data contoh
+   (fallbackItems) supaya tetap bisa dipakai.
+   ========================================================================= */
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2k8NJFbx1ZspwUKt4JhMxFriNyLn8_OZc5Zlm60ogpSy-Te0v_ZmGnzr57Y1jFxBwGw/exec"; // <-- isi dengan URL Web App Apps Script Anda
+const ADMIN_WA_NUMBER = "6285167542641";
+
+/* Memuat <script src="url?callback=nama_fungsi"> lalu menunggu Apps Script
+   memanggil fungsi tsb dengan data JSON. Ini menghindari fetch()/XHR yang
+   sering diblokir CSP connect-src pada platform pihak ketiga. */
+function jsonp(url, timeoutMs){
+  return new Promise((resolve, reject)=>{
+    const cbName = "bm_cb_" + Date.now() + "_" + Math.floor(Math.random()*1e6);
+    let done = false;
+    window[cbName] = (data)=>{ done = true; cleanup(); resolve(data); };
+    const script = document.createElement("script");
+    const sep = url.includes("?") ? "&" : "?";
+    script.src = url + sep + "callback=" + cbName;
+    script.onerror = ()=>{ if(!done){ cleanup(); reject(new Error("JSONP gagal dimuat")); } };
+    function cleanup(){ delete window[cbName]; script.remove(); }
+    document.body.appendChild(script);
+    setTimeout(()=>{ if(!done){ cleanup(); reject(new Error("JSONP timeout")); } }, timeoutMs || 10000);
+  });
+}
+
+const fallbackItems = [
+ {id:1,cat:"Perlengkapan",name:"Bean Bag Newborn",icon:"🛏️",priority:"wajib",price:650000,desc:"Area posing utama yang nyaman dan stabil untuk setup newborn."},
+ {id:2,cat:"Perlengkapan",name:"Posing Bean Bag Cover",icon:"🧺",priority:"wajib",price:250000,desc:"Cover untuk menjaga kebersihan dan mengganti tampilan setup."},
+ {id:3,cat:"Perlengkapan",name:"Backdrop Stand",icon:"📐",priority:"wajib",price:450000,desc:"Penopang backdrop untuk membangun area foto yang rapi."},
+ {id:4,cat:"Lighting",name:"Continuous Light",icon:"💡",priority:"wajib",price:900000,desc:"Sumber cahaya untuk setup yang konsisten; sesuaikan dengan workflow."},
+ {id:5,cat:"Lighting",name:"Reflector",icon:"◯",priority:"wajib",price:150000,desc:"Membantu mengarahkan atau melembutkan cahaya pada setup."},
+ {id:6,cat:"Props",name:"Wrap Newborn",icon:"🧶",priority:"wajib",price:120000,desc:"Kain wrap untuk variasi styling dan layering."},
+ {id:7,cat:"Props",name:"Mini Basket",icon:"🧺",priority:"optional",price:300000,desc:"Prop untuk variasi komposisi; gunakan sesuai konsep dan keamanan setup."},
+ {id:8,cat:"Props",name:"Wooden Bowl",icon:"🥣",priority:"optional",price:350000,desc:"Elemen styling untuk variasi visual."},
+ {id:9,cat:"Props",name:"Layering Fabric",icon:"🧣",priority:"wajib",price:100000,desc:"Kain dengan tekstur berbeda untuk membangun depth pada frame."},
+ {id:10,cat:"Backdrop",name:"Backdrop Neutral",icon:"🖼️",priority:"wajib",price:280000,desc:"Latar netral yang fleksibel untuk berbagai konsep."},
+ {id:11,cat:"Backdrop",name:"Backdrop Textured",icon:"🎨",priority:"optional",price:450000,desc:"Pilihan tambahan untuk memperbanyak variasi visual."},
+ {id:12,cat:"Safety",name:"Hand Sanitizer",icon:"🧴",priority:"wajib",price:45000,desc:"Bagian dari persiapan kebersihan sebelum dan selama sesi."},
+ {id:13,cat:"Safety",name:"Cleaning Kit",icon:"🧼",priority:"wajib",price:100000,desc:"Perlengkapan pembersihan area dan props."},
+ {id:14,cat:"Styling",name:"Bonnet Newborn",icon:"🧢",priority:"optional",price:90000,desc:"Aksesori styling; pemilihan harus mempertimbangkan kenyamanan bayi."},
+ {id:15,cat:"Styling",name:"Headband Newborn",icon:"🌸",priority:"optional",price:75000,desc:"Aksesori sederhana untuk variasi styling."},
+ {id:16,cat:"Storage",name:"Storage Box Props",icon:"📦",priority:"optional",price:180000,desc:"Membantu props tetap tertata dan mudah dicari saat sesi."}
+];
+
+let items = fallbackItems.slice();
+const owned = new Set(JSON.parse(localStorage.getItem("bm_owned") || "[]"));
+let category = "Semua";
+
+async function loadRemoteData(){
+  const statusEl = document.getElementById("dataStatus");
+  if(!APPS_SCRIPT_URL){
+    statusEl.textContent = "Menampilkan data contoh (Apps Script belum diisi)";
+    return;
+  }
+  try{
+    statusEl.textContent = "Memuat data…";
+    const json = await jsonp(APPS_SCRIPT_URL);
+    if(Array.isArray(json.items) && json.items.length){
+      items = json.items
+        .filter(x => x.name && String(x.name).trim() !== "") // buang baris kosong/header kategori
+        .map((x, i) => {
+          // id dari sheet sering kosong -> pakai index sebagai id unik supaya
+          // checklist per-item tidak "ketiban" satu sama lain (bug ceklis semua terpilih)
+          const idNum = Number(x.id);
+          return {
+            id: (x.id !== undefined && x.id !== "" && !isNaN(idNum)) ? idNum : (i + 1),
+            cat: x.cat || "Lainnya",
+            name: x.name,
+            icon: x.icon || "📦",
+            image: x.image || x.foto || x.gambar || "",
+            priority: (x.priority || "optional"),
+            price: Number(x.price) || 0,
+            desc: x.desc || "",
+            opsional: x.OPSIONAL || x.opsional || "",
+            catatan: x.CATATAN || x.catatan || "",
+            vendor: x["Nama Vendor"] || x.vendor || "",
+            spesialis: x.SPESIALIS || x.spesialis || "",
+            alamat: x.ALAMAT || x.alamat || "",
+            waLink: x["LINK WHATSAPP"] || x.waLink || "",
+            buyLink: x["LINK PEMBELIAN"] || x.buyLink || ""
+          };
+        });
+    }
+    if(json.hpp) applyRemoteHpp(json.hpp);
+    if(Array.isArray(json.hppCatalog)) hppCatalog = json.hppCatalog;
+    renderHppCatalog();
+    statusEl.textContent = "Data tersinkron dari Spreadsheet";
+    statusEl.className = "status ok";
+  }catch(err){
+    console.error(err);
+    statusEl.textContent = "Tidak bisa memuat Spreadsheet — memakai data contoh";
+    statusEl.className = "status err";
+  }
+  renderTabs();
+  render();
+}
+
+
+function applyRemoteHpp(hpp){
+  // hpp: array/object dari sheet HPPComponents, contoh { print, frame, mount, pack, ship, ops, margin }
+  const row = Array.isArray(hpp) ? hpp[0] : hpp;
+  if(!row) return;
+  const map = {c_print:"print", c_frame:"frame", c_mount:"mount", c_pack:"pack", c_ship:"ship", c_ops:"ops", c_margin:"margin"};
+  Object.entries(map).forEach(([id,key])=>{
+    if(row[key] !== undefined) document.getElementById(id).value = Number(row[key]);
+  });
+}
+
+/* ---------------- KATALOG HPP PRODUK (dari sheet "HPP") ---------------- */
+let hppCatalog = [];
+let hppSortKey = null;
+let hppSortDir = 1;
+
+function normalizeHppRow(r){
+  // Header di sheet: NAMA PRODUK, KODE PRODUK, HPP, JUAL, PROFIT, MARGIN, KETERANGAN
+  const num = v => { const n = Number(String(v).toString().replace(/[^0-9.-]/g,"")); return isNaN(n) ? 0 : n; };
+  let margin = r["MARGIN"];
+  let marginNum = num(margin);
+  // Kalau margin tersimpan sebagai pecahan (mis. -1.3 untuk -130%), ubah ke persen
+  if(Math.abs(marginNum) <= 5) marginNum = marginNum * 100;
+  return {
+    name: r["NAMA PRODUK"] || r.name || "",
+    code: r["KODE PRODUK"] || r.code || "",
+    hpp: num(r["HPP"]),
+    jual: num(r["JUAL"]),
+    profit: num(r["PROFIT"]),
+    margin: marginNum,
+    ket: r["KETERANGAN"] || r.ket || ""
+  };
+}
+
+function renderHppCatalog(){
+  const body = document.getElementById("hppCatalogBody");
+  const countEl = document.getElementById("hppCatalogCount");
+  if(!body) return;
+
+  let rows = hppCatalog.map(normalizeHppRow).filter(r => r.name);
+
+  const q = (document.getElementById("hppCatalogSearch")?.value || "").toLowerCase().trim();
+  if(q) rows = rows.filter(r => r.name.toLowerCase().includes(q) || r.code.toLowerCase().includes(q));
+
+  if(hppSortKey){
+    rows.sort((a,b)=>{
+      const av = a[hppSortKey], bv = b[hppSortKey];
+      if(typeof av === "string") return av.localeCompare(bv) * hppSortDir;
+      return (av - bv) * hppSortDir;
+    });
+  }
+
+  if(!rows.length){
+    body.innerHTML = `<tr><td colspan="7"><div class="empty">Belum ada data katalog HPP, atau tidak ada yang cocok dengan pencarian.</div></td></tr>`;
+    countEl.textContent = "";
+    return;
+  }
+
+  body.innerHTML = rows.map(r=>{
+    const marginClass = r.margin >= 0 ? "positive" : "negative";
+    return `<tr>
+      <td class="factor">${r.name}</td>
+      <td class="desc-col">${r.code}</td>
+      <td>${rupiah(r.hpp)}</td>
+      <td>${rupiah(r.jual)}</td>
+      <td>${rupiah(r.profit)}</td>
+      <td><span class="margin-pill ${marginClass}">${r.margin.toFixed(2)}%</span></td>
+      <td class="desc-col">${r.ket}</td>
+    </tr>`;
+  }).join("");
+  countEl.textContent = rows.length + " produk";
+}
+
+function sortHppCatalog(key){
+  hppSortDir = (hppSortKey === key) ? hppSortDir * -1 : 1;
+  hppSortKey = key;
+  renderHppCatalog();
+}
+
+const hppCatalogSearchEl = document.getElementById("hppCatalogSearch");
+if(hppCatalogSearchEl) hppCatalogSearchEl.addEventListener("input", renderHppCatalog);
+
+/* ---------------- VIEW SWITCH ---------------- */
+function showView(v){
+  ["library","hpp","ask","calc","admin"].forEach(name=>{
+    document.getElementById("view-"+name).classList.toggle("active", v===name);
+    document.getElementById("btn-"+name).classList.toggle("active", v===name);
+  });
+  if(v==="hpp"){ calcHpp(); renderHppCatalog(); }
+  if(v==="calc") calcHarga();
+  if(v==="ask") renderQaList();
+}
+
+/* ---------------- GATE: LOGIN RINGAN (NAMA + NO HP + EMAIL) ---------------- */
+function getSession(){
+  try{ return JSON.parse(localStorage.getItem("bm_session") || "null"); }catch(e){ return null; }
+}
+function saveSession(session){ localStorage.setItem("bm_session", JSON.stringify(session)); }
+
+function initGate(){
+  const session = getSession();
+  if(session && session.phone){
+    document.getElementById("gateOverlay").classList.add("hidden");
+    syncOwnedFromServer(session.phone);
+    updateVerifyBanner(session);
+    return;
+  }
+  document.getElementById("gateOverlay").classList.remove("hidden");
+}
+
+function updateVerifyBanner(session){
+  const banner = document.getElementById("verifyBanner");
+  if(!banner) return;
+  if(session && session.verified === false){
+    const template = `Halo, saya sudah mendaftar dengan email ${session.email} tapi status akun saya belum terverifikasi sebagai pembeli Info Perlengkapan & Props Newborn Photo. Berikut bukti pembayaran saya:`;
+    document.getElementById("verifyWaLink").href = `https://wa.me/${ADMIN_WA_NUMBER}?text=${encodeURIComponent(template)}`;
+    banner.style.display = "block";
+  }else{
+    banner.style.display = "none";
+  }
+}
+
+function submitGate(){
+  const name = document.getElementById("gateName").value.trim();
+  const phone = document.getElementById("gatePhone").value.trim().replace(/[^0-9]/g,"");
+  const email = document.getElementById("gateEmail").value.trim();
+  const statusEl = document.getElementById("gateStatus");
+  const btn = document.getElementById("gateSubmit");
+
+  if(!name){ statusEl.textContent = "Isi nama Anda dulu."; return; }
+  if(phone.length < 9){ statusEl.textContent = "Nomor WhatsApp tidak valid."; return; }
+  if(!email || email.indexOf("@") === -1){ statusEl.textContent = "Isi email yang valid."; return; }
+
+  btn.disabled = true;
+  statusEl.textContent = "Memproses…";
+
+  if(APPS_SCRIPT_URL){
+    jsonp(`${APPS_SCRIPT_URL}?action=register&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`)
+      .then(json=>{
+        const session = { name, phone, email, verified: !!json.verified };
+        saveSession(session);
+        document.getElementById("gateOverlay").classList.add("hidden");
+        syncOwnedFromServer(phone);
+        updateVerifyBanner(session);
+      })
+      .catch(err=>{
+        console.error(err);
+        saveSession({ name, phone, email, verified: false });
+        document.getElementById("gateOverlay").classList.add("hidden");
+      });
+  }else{
+    saveSession({ name, phone, email, verified: true });
+    document.getElementById("gateOverlay").classList.add("hidden");
+  }
+}
+
+function syncOwnedFromServer(phone){
+  if(!APPS_SCRIPT_URL || !phone) return;
+  jsonp(`${APPS_SCRIPT_URL}?action=getOwned&phone=${encodeURIComponent(phone)}`)
+    .then(json=>{
+      if(Array.isArray(json.owned) && json.owned.length){
+        json.owned.forEach(id=>owned.add(id));
+        localStorage.setItem("bm_owned", JSON.stringify([...owned]));
+        render();
+      }
+    })
+    .catch(err=>console.error(err));
+}
+
+function saveOwnedToServer(){
+  const session = getSession();
+  if(!APPS_SCRIPT_URL || !session || !session.phone) return;
+  jsonp(`${APPS_SCRIPT_URL}?action=saveOwned&phone=${encodeURIComponent(session.phone)}&owned=${encodeURIComponent([...owned].join(","))}`)
+    .catch(err=>console.error(err));
+}
+
+/* ---------------- ADMIN ---------------- */
+let adminPass = "";
+
+function showAdminIfRequested(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get("admin") === "1"){
+    document.getElementById("btn-admin").style.display = "inline-block";
+  }
+}
+
+function adminLogin(){
+  const pass = document.getElementById("adminPass").value;
+  const statusEl = document.getElementById("adminLoginStatus");
+  statusEl.textContent = "Memeriksa…";
+  jsonp(`${APPS_SCRIPT_URL}?action=adminAnalytics&pass=${encodeURIComponent(pass)}`)
+    .then(json=>{
+      if(json.error){ statusEl.textContent = "Passcode salah."; return; }
+      adminPass = pass;
+      document.getElementById("adminGateBox").style.display = "none";
+      document.getElementById("adminContent").style.display = "block";
+      loadAdminInbox();
+      loadAdminAnalytics();
+    })
+    .catch(err=>{ statusEl.textContent = "Gagal terhubung ke server."; console.error(err); });
+}
+
+function showAdminTab(tab){
+  document.getElementById("admtab-inbox").classList.toggle("active", tab==="inbox");
+  document.getElementById("admtab-analytics").classList.toggle("active", tab==="analytics");
+  document.getElementById("adminview-inbox").style.display = tab==="inbox" ? "block" : "none";
+  document.getElementById("adminview-analytics").style.display = tab==="analytics" ? "block" : "none";
+}
+
+function loadAdminInbox(){
+  const el = document.getElementById("adminQList");
+  el.innerHTML = "Memuat...";
+  jsonp(`${APPS_SCRIPT_URL}?action=adminListQuestions&pass=${encodeURIComponent(adminPass)}`)
+    .then(json=>{
+      const list = json.questions || [];
+      if(!list.length){ el.innerHTML = `<div class="empty">Belum ada pertanyaan masuk.</div>`; return; }
+      el.innerHTML = list.map(q=>`
+        <div class="admin-q-item">
+          <img src="${q.imageUrl}" alt="Props" onerror="this.style.display='none'">
+          <div>
+            <div class="q-meta">${new Date(q.timestamp).toLocaleString("id-ID")} — ${q.name || "Tanpa nama"} (${q.phone || "-"})</div>
+            <p class="q-text">${q.question}</p>
+            <span class="qa-badge ${q.status && q.status.toLowerCase().includes('terjawab') ? 'answered' : ''}">${q.status}</span>
+            <textarea id="ans_${q.id}" placeholder="Tulis jawaban di sini...">${q.answer||""}</textarea>
+            <button class="checkbtn" style="margin-top:6px" onclick="submitAdminAnswer('${q.id}')">Simpan Jawaban</button>
+          </div>
+        </div>`).join("");
+    })
+    .catch(err=>{ el.innerHTML = `<div class="empty">Gagal memuat data.</div>`; console.error(err); });
+}
+
+function submitAdminAnswer(id){
+  const answer = document.getElementById("ans_"+id).value.trim();
+  if(!answer) return;
+  jsonp(`${APPS_SCRIPT_URL}?action=adminAnswerQuestion&pass=${encodeURIComponent(adminPass)}&id=${encodeURIComponent(id)}&answer=${encodeURIComponent(answer)}`)
+    .then(()=>{ loadAdminInbox(); })
+    .catch(err=>console.error(err));
+}
+
+function loadAdminAnalytics(){
+  jsonp(`${APPS_SCRIPT_URL}?action=adminAnalytics&pass=${encodeURIComponent(adminPass)}`)
+    .then(json=>{
+      if(json.error) return;
+      document.getElementById("analyticsStats").innerHTML = `
+        <div class="stat-big"><strong>${json.totalUsers}</strong><span>Total Pengguna Terdaftar</span></div>
+        <div class="stat-big"><strong>${json.totalQuestions}</strong><span>Total Pertanyaan Masuk</span></div>
+        <div class="stat-big"><strong>${json.answeredQuestions}</strong><span>Sudah Dijawab</span></div>
+        <div class="stat-big"><strong>${json.pendingQuestions}</strong><span>Menunggu Jawaban</span></div>
+      `;
+      const cats = json.categoryCounts || {};
+      const max = Math.max(1, ...Object.values(cats));
+      document.getElementById("categoryChart").innerHTML = Object.entries(cats).map(([cat,count])=>`
+        <div class="cat-bar-row">
+          <div class="label">${cat}</div>
+          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${Math.round(count/max*100)}%"></div></div>
+          <div>${count}</div>
+        </div>`).join("") || `<div class="empty">Belum ada data kategori.</div>`;
+    })
+    .catch(err=>console.error(err));
+}
+
+/* ---------------- LIBRARY LOGIC ---------------- */
+const rupiah = n => "Rp" + Math.round(n).toLocaleString("id-ID");
+
+/* Bangun link WhatsApp ke vendor dengan template pesan yang menyebutkan
+   bahwa pengirim adalah peserta dari Info Vendor Props Bidan Motret,
+   supaya vendor tahu sumber referensinya. */
+function buildVendorWaLink(rawLink, itemName){
+  // rawLink bisa berupa "wa.me/62xxxx", "https://wa.me/62xxxx", atau nomor polos
+  const digits = String(rawLink).replace(/[^0-9]/g, "");
+  const template = `Halo, saya peserta dari *Info Perlengkapan & Props Newborn Photo* by Bidan Motret. Saya tertarik dengan *${itemName}*, apakah masih tersedia? Terima kasih 🙏`;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(template)}`;
+}
+
+function renderTabs(){
+  const cats = ["Semua", ...new Set(items.map(x=>x.cat))];
+  const tabsEl = document.getElementById("tabs");
+  tabsEl.innerHTML = `<select id="categorySelect" onchange="setCategory(this.value)">
+    ${cats.map(c => `<option value="${c}" ${c===category?"selected":""}>${c}</option>`).join("")}
+  </select>`;
+}
+function setCategory(c){category=c;renderTabs();render();}
+function getFiltered(){
+  const q=document.getElementById("search").value.toLowerCase().trim();
+  const p=document.getElementById("priority").value;
+  const b=document.getElementById("budgetFilter").value;
+  return items.filter(x=>{
+    const text=(x.name+" "+x.cat+" "+x.desc).toLowerCase();
+    const matchQ=!q||text.includes(q);
+    const matchC=category==="Semua"||x.cat===category;
+    const matchP=p==="all"||x.priority===p;
+    const matchB=b==="all"||(b==="low"&&x.price<250000)||(b==="mid"&&x.price>=250000&&x.price<=750000)||(b==="high"&&x.price>750000);
+    return matchQ&&matchC&&matchP&&matchB;
+  });
+}
+function toggleOwned(id){
+  owned.has(id)?owned.delete(id):owned.add(id);
+  localStorage.setItem("bm_owned",JSON.stringify([...owned]));
+  saveOwnedToServer();
+  render();
+}
+function render(){
+  const data=getFiltered();
+  document.getElementById("resultCount").textContent=data.length+" item";
+  document.getElementById("items").innerHTML=data.length?data.map(x=>{
+    const photoInner = x.image
+      ? `<img src="${x.image}" alt="${x.name}" loading="lazy">`
+      : x.icon;
+    const buyBtn = x.buyLink
+      ? `<a class="link" href="${x.buyLink}" target="_blank" rel="noopener">Beli di sini →</a>`
+      : `<span class="link muted">Belum ada link</span>`;
+    const waBtn = x.waLink
+      ? `<a class="link wa" href="${buildVendorWaLink(x.waLink, x.name)}" target="_blank" rel="noopener">💬 Chat Vendor</a>`
+      : "";
+    const vendorLine = x.vendor
+      ? `<div class="vendor-line">🏬 ${x.vendor}${x.spesialis ? " · " + x.spesialis : ""}</div>` : "";
+    return `
+    <article class="item">
+      <div class="photo">
+        ${photoInner}
+        <button class="check-badge ${owned.has(x.id)?'done':''}" title="Tandai sudah dimiliki" onclick="toggleOwned(${x.id})">${owned.has(x.id)?"✓":"+"}</button>
+      </div>
+      <div class="content">
+        <div class="tag-row">
+          <span class="tag">${x.cat}</span>
+          <span class="tag ${x.priority}">${x.priority==="wajib"?"PRIORITAS UTAMA":"TAMBAHAN"}</span>
+        </div>
+        <h3>${x.name}</h3>
+        <p class="desc">${x.desc || x.catatan || ""}</p>
+        ${vendorLine}
+        <div class="meta"><span class="price">${x.price ? rupiah(x.price) : "Harga menyusul"}</span></div>
+        <div class="link-row">${buyBtn}${waBtn}</div>
+      </div>
+    </article>`;
+  }).join(""):`<div class="empty">Tidak ada item yang sesuai dengan pencarian Anda.</div>`;
+
+  const ownedCount=owned.size;
+  const pct = items.length ? Math.round((ownedCount/items.length)*100) : 0;
+  document.getElementById("totalItems").textContent=items.length;
+  document.getElementById("checkedItems").textContent=ownedCount;
+  document.getElementById("progressText").textContent=pct;
+  document.getElementById("progressBar").style.width=pct+"%";
+
+  const wishlist=items.filter(x=>!owned.has(x.id));
+  const total=wishlist.reduce((s,x)=>s+x.price,0);
+  document.getElementById("budget").textContent=rupiah(total);
+  document.getElementById("wishlistBudget").textContent=rupiah(total);
+
+  const ownedItems=items.filter(x=>owned.has(x.id));
+  document.getElementById("ownedList").innerHTML=ownedItems.length
+    ? ownedItems.slice(0,6).map(x=>`<li>✓ ${x.name}</li>`).join("")+(ownedItems.length>6?`<li>+ ${ownedItems.length-6} item lainnya</li>`:"")
+    : `<li>Belum ada item yang ditandai.</li>`;
+}
+function resetFilters(){
+  document.getElementById("search").value="";
+  document.getElementById("priority").value="all";
+  document.getElementById("budgetFilter").value="all";
+  category="Semua";renderTabs();render();
+}
+["search","priority","budgetFilter"].forEach(id=>document.getElementById(id).addEventListener("input",render));
+
+/* ---------------- REKOMENDASI SESUAI BUDGET ---------------- */
+function recommendByBudget(){
+  const budget = Number(document.getElementById("budgetRecInput").value) || 0;
+  const resultEl = document.getElementById("budgetRecResult");
+  if(budget <= 0){
+    resultEl.innerHTML = `<div class="budget-rec-empty">Masukkan angka budget terlebih dahulu.</div>`;
+    return;
+  }
+
+  // Prioritaskan item "wajib" (termurah dulu) supaya kebutuhan inti terpenuhi,
+  // baru sisa budget dipakai untuk item "optional" (juga termurah dulu).
+  const wajib = items.filter(x=>x.priority==="wajib" && !owned.has(x.id)).sort((a,b)=>a.price-b.price);
+  const optional = items.filter(x=>x.priority!=="wajib" && !owned.has(x.id)).sort((a,b)=>a.price-b.price);
+
+  let sisa = budget;
+  const picked = [];
+  [...wajib, ...optional].forEach(x=>{
+    if(x.price <= sisa){ picked.push(x); sisa -= x.price; }
+  });
+
+  if(!picked.length){
+    resultEl.innerHTML = `<div class="budget-rec-empty">Budget terlalu kecil untuk item manapun di Library saat ini.</div>`;
+    return;
+  }
+
+  const total = picked.reduce((s,x)=>s+x.price,0);
+  resultEl.innerHTML = picked.map(x=>`
+    <div class="budget-rec-item"><span>${x.name}</span><span>${rupiah(x.price)}</span></div>
+  `).join("") + `
+    <div class="budget-rec-total"><span>Total (${picked.length} item)</span><span>${rupiah(total)}</span></div>
+    <div class="budget-rec-total" style="font-weight:400;opacity:.85"><span>Sisa budget</span><span>${rupiah(sisa)}</span></div>
+  `;
+}
+
+/* ---------------- HPP LOGIC ---------------- */
+const combos = [
+  {name:"1 Cetak + Bingkai", print:1, frame:1, mount:1, pack:1, ship:1, ops:1},
+  {name:"3 Cetak (mini album) + Bingkai", print:3, frame:1, mount:3, pack:1, ship:1, ops:1},
+  {name:"5 Cetak + 2 Bingkai (paket keluarga)", print:5, frame:2, mount:5, pack:1, ship:1, ops:1},
+];
+
+function getHppInputs(){
+  const val = id => Number(document.getElementById(id).value) || 0;
+  return {
+    print: val("c_print"), frame: val("c_frame"), mount: val("c_mount"),
+    pack: val("c_pack"), ship: val("c_ship"), ops: val("c_ops"),
+    margin: val("c_margin"), qty: val("c_qty") || 1
+  };
+}
+function calcHpp(){
+  const c = getHppInputs();
+  const set = (id,val) => document.getElementById(id).textContent = rupiah(val);
+  set("s_print", c.print); set("s_frame", c.frame); set("s_mount", c.mount);
+  set("s_pack", c.pack); set("s_ship", c.ship); set("s_ops", c.ops);
+  const hpp = c.print + c.frame + c.mount + c.pack + c.ship + c.ops;
+  const sell = hpp * (1 + c.margin/100);
+  set("s_hpp", hpp);
+  set("s_sell", sell);
+  document.getElementById("s_marginlabel").textContent = "Margin " + c.margin + "%";
+
+  document.getElementById("comboBody").innerHTML = combos.map(cb=>{
+    const comboHpp = cb.print*c.print + cb.frame*c.frame + cb.mount*c.mount + cb.pack*c.pack + cb.ship*c.ship + cb.ops*c.ops;
+    const comboSell = comboHpp * (1 + c.margin/100);
+    return `<tr><td>${cb.name}</td><td class="num">${rupiah(comboHpp)}</td><td class="num">${rupiah(comboSell)}</td></tr>`;
+  }).join("");
+}
+["c_print","c_frame","c_mount","c_pack","c_ship","c_ops","c_margin","c_qty"].forEach(id=>
+  document.getElementById(id).addEventListener("input", calcHpp)
+);
+
+/* ---------------- KALKULATOR HARGA FOTO BAYI ---------------- */
+/*
+   Struktur mengikuti spreadsheet "KALKULATOR MERANCANG HARGA FOTO BAYI":
+   setiap faktor punya kontribusi% dan 3 pilihan kriteria dengan skor 50/75/100.
+   Harga Akhir (per pilihan Harga Dasar) = Σ ( HargaDasar * kontribusi/100 * skor/100 )
+*/
+const priceFactors = [
+  {key:"pengalaman", label:"Pengalaman Fotografer", kontribusi:15,
+    desc:"Lama waktu dan banyaknya sesi foto yang telah dikerjakan",
+    options:[
+      {label:"Pemula (0–1 tahun / <20 sesi)",skor:50},
+      {label:"Menengah (1–2 tahun / 20–60 sesi)",skor:65},
+      {label:"Berpengalaman (2–3 tahun / 60–150 sesi)",skor:80},
+      {label:"Ahli (>3 tahun / >150 sesi)",skor:100}
+    ]},
+  {key:"peralatan", label:"Harga Peralatan Kamera", kontribusi:15,
+    desc:"Total investasi pada kamera, lensa, dan lighting",
+    options:[
+      {label:"Pemula (< Rp10 juta)",skor:50},
+      {label:"Menengah (Rp10–20 juta)",skor:65},
+      {label:"Lanjutan (Rp20–35 juta)",skor:80},
+      {label:"Profesional (> Rp35 juta)",skor:100}
+    ]},
+  {key:"teknik", label:"Penguasaan Teknik Pose", kontribusi:10,
+    desc:"Keahlian dalam mengatur pose dan keamanan bayi",
+    options:[
+      {label:"Pemula (baru belajar pose dasar)",skor:50},
+      {label:"Menengah (menguasai 3–5 pose populer)",skor:65},
+      {label:"Mahir (menguasai >5 pose + variasi)",skor:80},
+      {label:"Profesional (mampu compose pose custom)",skor:100}
+    ]},
+  {key:"tema", label:"Kelengkapan Tema dan Props", kontribusi:15,
+    desc:"Ketersediaan tema, props, dan variasi backdrop",
+    options:[
+      {label:"Sederhana (1–2 set tema)",skor:50},
+      {label:"Cukup (3–5 set tema)",skor:65},
+      {label:"Lengkap (6–10 set tema)",skor:80},
+      {label:"Premium (>10 set tema + props eksklusif)",skor:100}
+    ]},
+  {key:"layanan", label:"Layanan Tambahan", kontribusi:10,
+    desc:"Pengeditan, cetak, dan pengiriman hasil foto",
+    options:[
+      {label:"Basic (file digital saja, edit minim)",skor:50},
+      {label:"Standar (edit penuh + beberapa cetak)",skor:65},
+      {label:"Lengkap (edit + cetak + album mini)",skor:80},
+      {label:"Premium (edit + cetak + bingkai + antar)",skor:100}
+    ]},
+  {key:"reputasi", label:"Reputasi dan Portofolio", kontribusi:10,
+    desc:"Jumlah klien dan kualitas portofolio",
+    options:[
+      {label:"Baru (<10 klien / belum ada review)",skor:50},
+      {label:"Berkembang (10–30 klien, review positif)",skor:65},
+      {label:"Sedang (30–80 klien, portofolio kuat)",skor:80},
+      {label:"Terkenal (>80 klien, dikenal luas)",skor:100}
+    ]},
+  {key:"lokasi", label:"Lokasi dan Aksesibilitas", kontribusi:10,
+    desc:"Jarak dan akses ke lokasi foto (studio/homeservice)",
+    options:[
+      {label:"Sangat dekat (dalam kota, <5km)",skor:50},
+      {label:"Dekat (5–15km)",skor:65},
+      {label:"Sedang (15–30km)",skor:80},
+      {label:"Jauh (>30km / luar kota)",skor:100}
+    ]},
+  {key:"kecepatan", label:"Kecepatan Layanan", kontribusi:5,
+    desc:"Waktu pengembalian hasil foto ke klien",
+    options:[
+      {label:"Lama (>14 hari)",skor:50},
+      {label:"Sedang (7–14 hari)",skor:65},
+      {label:"Cukup cepat (3–7 hari)",skor:80},
+      {label:"Cepat (<3 hari)",skor:100}
+    ]},
+  {key:"kelahiran", label:"Jumlah Kelahiran di Kota", kontribusi:10,
+    desc:"Estimasi jumlah kelahiran per bulan di kota domisili (potensi market)",
+    options:[
+      {label:"Rendah (<500 kelahiran/bulan)",skor:50},
+      {label:"Sedang (500–1000 kelahiran/bulan)",skor:65},
+      {label:"Cukup tinggi (1000–2000 kelahiran/bulan)",skor:80},
+      {label:"Tinggi (>2000 kelahiran/bulan)",skor:100}
+    ]},
+];
+
+function renderCalcFactors(){
+  document.getElementById("calcFactorBody").innerHTML = priceFactors.map((f)=>`
+    <tr>
+      <td class="factor">${f.label}</td>
+      <td class="desc-col">${f.desc}</td>
+      <td class="kontribusi">${f.kontribusi}%</td>
+      <td>
+        <select id="skor_${f.key}" onchange="calcHarga()">
+          ${f.options.map((o,oi)=>`<option value="${o.skor}" ${oi===1?"selected":""}>${o.label} — Skor ${o.skor}</option>`).join("")}
+        </select>
+      </td>
+    </tr>`).join("");
+}
+
+function resetCalcFactors(){
+  priceFactors.forEach(f=>{
+    const sel = document.getElementById("skor_"+f.key);
+    if(sel) sel.selectedIndex = 1; // kembali ke tingkat "menengah" bawaan
+  });
+  calcHarga();
+}
+
+function calcHarga(){
+  const dasarIds = ["hd1","hd2","hd3","hd4"];
+  const dasarValues = dasarIds.map(id => Number(document.getElementById(id).value) || 0);
+
+  const totals = dasarValues.map(()=>0);
+  priceFactors.forEach(f=>{
+    const sel = document.getElementById("skor_"+f.key);
+    if(!sel) return;
+    const skor = Number(sel.value);
+    dasarValues.forEach((hd,i)=>{
+      totals[i] += hd * (f.kontribusi/100) * (skor/100);
+    });
+  });
+
+  document.getElementById("calcResults").innerHTML = totals.map((t,i)=>`
+    <div class="result-card">
+      <div class="tema-label">${i+1} TEMA</div>
+      <div class="tema-price">${rupiah(t)}</div>
+    </div>`).join("");
+}
+["hd1","hd2","hd3","hd4"].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener("input", calcHarga);
+});
+
+/* ---------------- TANYA PROPS INI BELI DIMANA ---------------- */
+/*
+   Kirim pertanyaan TANPA fetch()/XHR (supaya tidak kena CSP connect-src
+   di platform seperti Scalev/Tribelio): pakai <form> yang di-submit ke
+   iframe tersembunyi. Ini dianggap navigasi form biasa oleh browser,
+   diatur oleh 'form-action' CSP (biasanya lebih longgar), bukan
+   'connect-src'. Lihat blok komentar Apps Script di atas untuk doPost().
+*/
+const ASK_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2k8NJFbx1ZspwUKt4JhMxFriNyLn8_OZc5Zlm60ogpSy-Te0v_ZmGnzr57Y1jFxBwGw/exec"; // <-- isi dengan URL Web App Apps Script Anda (boleh sama dengan APPS_SCRIPT_URL jika satu project)
+
+function submitViaHiddenForm(url, payloadObj){
+  return new Promise((resolve)=>{
+    let iframe = document.getElementById("bmHiddenFrame");
+    if(!iframe){
+      iframe = document.createElement("iframe");
+      iframe.name = "bmHiddenFrame"; iframe.id = "bmHiddenFrame"; iframe.style.display = "none";
+      document.body.appendChild(iframe);
+    }
+    const form = document.createElement("form");
+    form.method = "POST"; form.action = url; form.target = "bmHiddenFrame"; form.style.display = "none";
+    const input = document.createElement("input");
+    input.name = "payload"; input.value = JSON.stringify(payloadObj);
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(()=>{ form.remove(); resolve(true); }, 600);
+  });
+}
+
+let pendingImageDataUrl = null;
+
+document.getElementById("imgInput").addEventListener("change", handleImageSelect);
+
+function handleImageSelect(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const note = document.getElementById("compressNote");
+  note.textContent = "Mengompres gambar…";
+  compressImage(file, 900, 0.7).then(dataUrl=>{
+    pendingImageDataUrl = dataUrl;
+    const sizeKb = Math.round((dataUrl.length * 0.75) / 1024);
+    document.getElementById("dropzoneInner").innerHTML = `<img src="${dataUrl}" alt="Preview props">`;
+    document.getElementById("dropzone").classList.add("has-image");
+    note.textContent = `Gambar siap dikirim (± ${sizeKb} KB setelah kompresi).`;
+  }).catch(()=>{
+    note.textContent = "Gagal memproses gambar, coba foto lain.";
+  });
+}
+
+function compressImage(file, maxDim, quality){
+  return new Promise((resolve,reject)=>{
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = ev => { img.src = ev.target.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      let { width, height } = img;
+      if(width > height && width > maxDim){ height = Math.round(height * maxDim/width); width = maxDim; }
+      else if(height > maxDim){ width = Math.round(width * maxDim/height); height = maxDim; }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function getQaHistory(){
+  return JSON.parse(localStorage.getItem("bm_qa_history") || "[]");
+}
+function saveQaHistory(list){
+  localStorage.setItem("bm_qa_history", JSON.stringify(list));
+}
+
+async function submitAsk(){
+  const question = document.getElementById("askText").value.trim();
+  const statusEl = document.getElementById("askStatus");
+  const btn = document.getElementById("askSubmit");
+  if(!question){ statusEl.textContent = "Tulis pertanyaan Anda terlebih dahulu."; return; }
+  if(!pendingImageDataUrl){ statusEl.textContent = "Upload foto props terlebih dahulu."; return; }
+
+  btn.disabled = true;
+  statusEl.textContent = "Mengirim pertanyaan…";
+
+  const session = getSession() || {};
+  const entry = {
+    id: "q_" + Date.now() + "_" + Math.random().toString(36).slice(2,8),
+    question, image: pendingImageDataUrl,
+    timestamp: new Date().toISOString(),
+    status: "Menunggu jawaban", answer: "",
+    phone: session.phone || "", name: session.name || "", email: session.email || ""
+  };
+
+  if(ASK_APPS_SCRIPT_URL){
+    try{
+      await submitViaHiddenForm(ASK_APPS_SCRIPT_URL, entry);
+      statusEl.textContent = "Pertanyaan terkirim ke admin. Cek status jawaban di daftar bawah.";
+    }catch(err){
+      console.error(err);
+      statusEl.textContent = "Pertanyaan disimpan lokal (gagal kirim ke server).";
+    }
+  }else{
+    statusEl.textContent = "Pertanyaan tersimpan (Apps Script belum diisi, admin belum bisa melihat otomatis).";
+  }
+
+  const history = getQaHistory();
+  history.unshift(entry);
+  saveQaHistory(history);
+
+  document.getElementById("askText").value = "";
+  pendingImageDataUrl = null;
+  document.getElementById("dropzoneInner").innerHTML = `<div class="hint">📷 Klik untuk pilih / ambil foto props<br><b>JPG/PNG</b>, otomatis dikompres</div>`;
+  document.getElementById("dropzone").classList.remove("has-image");
+  document.getElementById("compressNote").textContent = "";
+  btn.disabled = false;
+  renderQaList();
+}
+
+async function checkAnswer(id){
+  const history = getQaHistory();
+  const item = history.find(x=>x.id===id);
+  if(!item) return;
+  if(!ASK_APPS_SCRIPT_URL){
+    item.status = "Apps Script belum diisi — hubungi admin manual via WA";
+    saveQaHistory(history); renderQaList(); return;
+  }
+  try{
+    const json = await jsonp(`${ASK_APPS_SCRIPT_URL}?action=getAnswer&id=${encodeURIComponent(id)}`, 8000);
+    if(json.found){
+      item.status = json.status || "Terjawab";
+      item.answer = json.answer || "";
+    }else{
+      item.status = "Menunggu jawaban";
+    }
+  }catch(err){
+    console.error(err);
+  }
+  saveQaHistory(history);
+  renderQaList();
+}
+
+function renderQaList(){
+  const list = getQaHistory();
+  const el = document.getElementById("qaList");
+  if(!list.length){ el.innerHTML = `<div class="empty">Belum ada pertanyaan yang diajukan.</div>`; return; }
+  el.innerHTML = list.map(x=>{
+    const answered = x.status && x.status.toLowerCase().includes("terjawab");
+    return `
+    <div class="qa-item">
+      <img src="${x.image}" alt="Props">
+      <div>
+        <div class="q-meta">${new Date(x.timestamp).toLocaleString("id-ID")}</div>
+        <p class="q-text">${x.question}</p>
+        <span class="qa-badge ${answered?'answered':''}">${x.status}</span>
+        ${x.answer ? `<div class="qa-answer">💬 ${x.answer}</div>` : ""}
+        <div style="margin-top:8px"><button class="checkbtn" onclick="checkAnswer('${x.id}')">Cek Jawaban</button></div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ---------------- INIT ---------------- */
+renderTabs();
+render();
+calcHpp();
+renderHppCatalog();
+renderCalcFactors();
+calcHarga();
+renderQaList();
+loadRemoteData();
+initGate();
+showAdminIfRequested();
+</script>
+</body>
+</html>
