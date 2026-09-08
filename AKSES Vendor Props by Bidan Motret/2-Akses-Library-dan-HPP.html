@@ -552,11 +552,55 @@ textarea:focus{border-color:var(--clay)}
 
       <div class="admin-tabs">
         <button class="admin-tab-btn active" id="admtab-inbox" onclick="showAdminTab('inbox')">Inbox Tanya Props</button>
+        <button class="admin-tab-btn" id="admtab-products" onclick="showAdminTab('products')">Kelola Produk</button>
         <button class="admin-tab-btn" id="admtab-analytics" onclick="showAdminTab('analytics')">Analitik</button>
       </div>
 
       <div id="adminview-inbox">
         <div id="adminQList"></div>
+      </div>
+
+      <div id="adminview-products" style="display:none">
+        <div class="hpp-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+            <div>
+              <h3 id="productFormTitle">Tambah Produk Baru</h3>
+              <p class="sub">Isi detail produk lalu simpan. Klik "Edit" pada daftar di bawah untuk mengubah produk yang sudah ada.</p>
+            </div>
+            <button class="reset" onclick="resetProductForm()">+ Produk Baru</button>
+          </div>
+
+          <input type="hidden" id="p_row" value="">
+          <div class="field-row"><label>Nama Produk</label><input type="text" id="p_name" placeholder="Bean Bag Newborn"></div>
+          <div class="field-row"><label>Kategori</label><input type="text" id="p_cat" placeholder="Perlengkapan / Props / Lighting..."></div>
+          <div class="field-row"><label>Prioritas</label>
+            <select id="p_priority"><option value="wajib">Wajib</option><option value="optional">Tambahan</option></select>
+          </div>
+          <div class="field-row"><label>Harga (Rp)</label><input type="number" id="p_price" placeholder="650000"></div>
+          <div class="field-row"><label>Deskripsi</label><input type="text" id="p_desc" placeholder="Deskripsi singkat"></div>
+          <div class="field-row"><label>Nama Vendor</label><input type="text" id="p_vendor" placeholder="Nama toko/vendor"></div>
+          <div class="field-row"><label>Spesialis</label><input type="text" id="p_spesialis" placeholder="mis. Bean bag & posing"></div>
+          <div class="field-row"><label>Link WhatsApp Vendor</label><input type="text" id="p_wa" placeholder="6281234567890 atau wa.me/..."></div>
+          <div class="field-row"><label>Link Pembelian</label><input type="text" id="p_buylink" placeholder="https://shopee.co.id/..."></div>
+
+          <span class="field-label">Foto Produk</span>
+          <div class="dropzone" id="productDropzone" onclick="document.getElementById('productImgInput').click()">
+            <div id="productDropzoneInner"><div class="hint">📷 Klik untuk pilih foto produk<br><b>JPG/PNG</b>, otomatis dikompres</div></div>
+            <input type="file" id="productImgInput" accept="image/*" style="display:none">
+          </div>
+          <div class="compress-note" id="productImgNote"></div>
+
+          <button class="submitbtn" id="productSaveBtn" onclick="saveProduct()">Simpan Produk</button>
+          <div class="compress-note" id="productSaveStatus"></div>
+        </div>
+
+        <div class="hpp-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+            <h3>Daftar Produk</h3>
+            <input type="search" id="productListSearch" placeholder="Cari produk..." style="max-width:240px" oninput="renderAdminProductList()">
+          </div>
+          <div id="adminProductList"></div>
+        </div>
       </div>
 
       <div id="adminview-analytics" style="display:none">
@@ -953,10 +997,11 @@ function adminLogin(){
 }
 
 function showAdminTab(tab){
-  document.getElementById("admtab-inbox").classList.toggle("active", tab==="inbox");
-  document.getElementById("admtab-analytics").classList.toggle("active", tab==="analytics");
-  document.getElementById("adminview-inbox").style.display = tab==="inbox" ? "block" : "none";
-  document.getElementById("adminview-analytics").style.display = tab==="analytics" ? "block" : "none";
+  ["inbox","products","analytics"].forEach(t=>{
+    document.getElementById("admtab-"+t).classList.toggle("active", tab===t);
+    document.getElementById("adminview-"+t).style.display = tab===t ? "block" : "none";
+  });
+  if(tab==="products") loadAdminProducts();
 }
 
 function loadAdminInbox(){
@@ -987,6 +1032,156 @@ function submitAdminAnswer(id){
   jsonp(`${APPS_SCRIPT_URL}?action=adminAnswerQuestion&pass=${encodeURIComponent(adminPass)}&id=${encodeURIComponent(id)}&answer=${encodeURIComponent(answer)}`)
     .then(()=>{ loadAdminInbox(); })
     .catch(err=>console.error(err));
+}
+
+/* ---------------- ADMIN: KELOLA PRODUK ---------------- */
+let adminProducts = [];
+let pendingProductImageUrl = ""; // URL hasil upload (bukan base64, karena sudah diupload ke Drive)
+
+function loadAdminProducts(){
+  const listEl = document.getElementById("adminProductList");
+  listEl.innerHTML = "Memuat...";
+  jsonp(`${APPS_SCRIPT_URL}?action=adminListItems&pass=${encodeURIComponent(adminPass)}`)
+    .then(json=>{
+      adminProducts = json.items || [];
+      renderAdminProductList();
+    })
+    .catch(err=>{ listEl.innerHTML = `<div class="empty">Gagal memuat produk.</div>`; console.error(err); });
+}
+
+function renderAdminProductList(){
+  const listEl = document.getElementById("adminProductList");
+  const q = (document.getElementById("productListSearch")?.value || "").toLowerCase().trim();
+  let rows = adminProducts;
+  if(q) rows = rows.filter(r => String(r.name||"").toLowerCase().includes(q) || String(r.cat||"").toLowerCase().includes(q));
+
+  if(!rows.length){ listEl.innerHTML = `<div class="empty">Belum ada produk, atau tidak ada yang cocok pencarian.</div>`; return; }
+
+  listEl.innerHTML = rows.map(r=>`
+    <div class="admin-q-item">
+      <img src="${r.image||''}" alt="${r.name}" onerror="this.style.display='none'">
+      <div>
+        <div class="q-meta">${r.cat||'-'} · ${r.priority==='wajib'?'Prioritas Utama':'Tambahan'}</div>
+        <p class="q-text"><b>${r.name}</b> — ${r.price ? rupiah(Number(r.price)) : 'Harga belum diisi'}</p>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button class="checkbtn" onclick='editProduct(${r._row})'>Edit</button>
+          <button class="checkbtn" style="color:#a2453f" onclick="deleteProduct(${r._row})">Hapus</button>
+        </div>
+      </div>
+    </div>`).join("");
+}
+
+function findProductByRow(row){ return adminProducts.find(p => p._row === row); }
+
+function editProduct(row){
+  const p = findProductByRow(row);
+  if(!p) return;
+  document.getElementById("productFormTitle").textContent = "Edit Produk";
+  document.getElementById("p_row").value = p._row;
+  document.getElementById("p_name").value = p.name || "";
+  document.getElementById("p_cat").value = p.cat || "";
+  document.getElementById("p_priority").value = p.priority === "wajib" ? "wajib" : "optional";
+  document.getElementById("p_price").value = p.price || "";
+  document.getElementById("p_desc").value = p.desc || "";
+  document.getElementById("p_vendor").value = p["Nama Vendor"] || "";
+  document.getElementById("p_spesialis").value = p.SPESIALIS || "";
+  document.getElementById("p_wa").value = p["LINK WHATSAPP"] || "";
+  document.getElementById("p_buylink").value = p["LINK PEMBELIAN"] || "";
+  pendingProductImageUrl = p.image || "";
+  document.getElementById("productDropzoneInner").innerHTML = pendingProductImageUrl
+    ? `<img src="${pendingProductImageUrl}" alt="Preview">`
+    : `<div class="hint">📷 Klik untuk pilih foto produk<br><b>JPG/PNG</b>, otomatis dikompres</div>`;
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function resetProductForm(){
+  document.getElementById("productFormTitle").textContent = "Tambah Produk Baru";
+  ["p_row","p_name","p_cat","p_price","p_desc","p_vendor","p_spesialis","p_wa","p_buylink"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("p_priority").value = "wajib";
+  pendingProductImageUrl = "";
+  document.getElementById("productDropzoneInner").innerHTML = `<div class="hint">📷 Klik untuk pilih foto produk<br><b>JPG/PNG</b>, otomatis dikompres</div>`;
+  document.getElementById("productImgNote").textContent = "";
+  document.getElementById("productSaveStatus").textContent = "";
+}
+
+function deleteProduct(row){
+  if(!confirm("Hapus produk ini? Tindakan ini tidak bisa dibatalkan.")) return;
+  jsonp(`${APPS_SCRIPT_URL}?action=adminDeleteItem&pass=${encodeURIComponent(adminPass)}&row=${row}`)
+    .then(()=>{ loadAdminProducts(); })
+    .catch(err=>console.error(err));
+}
+
+document.getElementById("productImgInput").addEventListener("change", handleProductImageSelect);
+
+function handleProductImageSelect(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const note = document.getElementById("productImgNote");
+  note.textContent = "Mengompres & mengupload gambar…";
+  compressImage(file, 900, 0.7).then(dataUrl=>{
+    document.getElementById("productDropzoneInner").innerHTML = `<img src="${dataUrl}" alt="Preview">`;
+    uploadProductImage(dataUrl)
+      .then(url=>{ pendingProductImageUrl = url; note.textContent = "Gambar berhasil diupload."; })
+      .catch(err=>{ console.error(err); note.textContent = "Gagal upload gambar, coba lagi."; });
+  }).catch(()=>{ note.textContent = "Gagal memproses gambar, coba foto lain."; });
+}
+
+/** Upload gambar produk: kirim base64 lewat form POST ke iframe tersembunyi
+ *  (karena base64 terlalu besar untuk URL GET), lalu polling hasilnya lewat
+ *  GET/JSONP (getUploadResult) sampai Apps Script selesai memprosesnya. */
+function uploadProductImage(dataUrl){
+  return new Promise((resolve, reject)=>{
+    const uploadId = "up_" + Date.now() + "_" + Math.random().toString(36).slice(2,8);
+    submitViaHiddenForm(APPS_SCRIPT_URL, { action:"adminUploadImage", pass:adminPass, image:dataUrl, uploadId })
+      .then(()=>{
+        let attempts = 0;
+        const poll = ()=>{
+          attempts++;
+          jsonp(`${APPS_SCRIPT_URL}?action=getUploadResult&id=${uploadId}`, 8000)
+            .then(json=>{
+              if(json.found) resolve(json.url);
+              else if(attempts < 15) setTimeout(poll, 1200);
+              else reject(new Error("Timeout menunggu upload"));
+            })
+            .catch(()=>{ if(attempts < 15) setTimeout(poll, 1200); else reject(new Error("Gagal polling upload")); });
+        };
+        setTimeout(poll, 1500); // beri waktu server memproses upload dulu
+      })
+      .catch(reject);
+  });
+}
+
+function saveProduct(){
+  const statusEl = document.getElementById("productSaveStatus");
+  const name = document.getElementById("p_name").value.trim();
+  if(!name){ statusEl.textContent = "Nama produk wajib diisi."; return; }
+
+  const params = {
+    pass: adminPass,
+    row: document.getElementById("p_row").value || "",
+    name: name,
+    cat: document.getElementById("p_cat").value.trim(),
+    priority: document.getElementById("p_priority").value,
+    price: document.getElementById("p_price").value,
+    desc: document.getElementById("p_desc").value.trim(),
+    image: pendingProductImageUrl,
+    "Nama Vendor": document.getElementById("p_vendor").value.trim(),
+    "SPESIALIS": document.getElementById("p_spesialis").value.trim(),
+    "LINK WHATSAPP": document.getElementById("p_wa").value.trim(),
+    "LINK PEMBELIAN": document.getElementById("p_buylink").value.trim(),
+  };
+
+  statusEl.textContent = "Menyimpan…";
+  const qs = Object.entries(params).map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&");
+  jsonp(`${APPS_SCRIPT_URL}?action=adminSaveItem&${qs}`)
+    .then(json=>{
+      if(json.error){ statusEl.textContent = "Gagal: " + json.error; return; }
+      statusEl.textContent = "Produk tersimpan.";
+      resetProductForm();
+      loadAdminProducts();
+      loadRemoteData(); // refresh Library juga supaya produk baru langsung tampil
+    })
+    .catch(err=>{ statusEl.textContent = "Gagal menyimpan ke server."; console.error(err); });
 }
 
 function loadAdminAnalytics(){
@@ -1311,30 +1506,33 @@ function calcHarga(){
 
 /* ---------------- TANYA PROPS INI BELI DIMANA ---------------- */
 /*
-   Kirim pertanyaan TANPA fetch()/XHR (supaya tidak kena CSP connect-src
-   di platform seperti Scalev/Tribelio): pakai <form> yang di-submit ke
-   iframe tersembunyi. Ini dianggap navigasi form biasa oleh browser,
-   diatur oleh 'form-action' CSP (biasanya lebih longgar), bukan
-   'connect-src'. Lihat blok komentar Apps Script di atas untuk doPost().
+   Kirim data besar (foto base64) via fetch() dengan mode "no-cors".
+   Sebelumnya bagian ini pakai <form> ke iframe tersembunyi untuk menyiasati
+   CSP connect-src di Scalev/Tribelio — tapi cara itu kadang kena 403 dari
+   Google (endpoint script.googleusercontent.com/macros/echo menolak
+   navigasi form POST tertentu). Sekarang karena halaman ini dihosting
+   sendiri di Vercel (domain sendiri, tanpa CSP pembatas), fetch() biasa
+   jauh lebih stabil. mode:"no-cors" dipakai supaya browser tidak
+   memblokir karena Apps Script tidak selalu mengirim header CORS yang
+   pas — konsekuensinya kita tidak bisa membaca response langsung (makanya
+   endpoint yang perlu hasil, seperti upload gambar, pakai pola
+   kirim-lalu-polling lewat action=getUploadResult, lihat uploadProductImage()).
+
+   CATATAN kalau file ini dipakai lagi di Scalev (bukan Vercel): fetch()
+   akan diblokir CSP connect-src Scalev. Untuk kasus itu, kembalikan ke
+   versi <form> ke iframe tersembunyi (ada di riwayat percakapan sebelumnya).
 */
 const ASK_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2k8NJFbx1ZspwUKt4JhMxFriNyLn8_OZc5Zlm60ogpSy-Te0v_ZmGnzr57Y1jFxBwGw/exec"; // <-- isi dengan URL Web App Apps Script Anda (boleh sama dengan APPS_SCRIPT_URL jika satu project)
 
 function submitViaHiddenForm(url, payloadObj){
-  return new Promise((resolve)=>{
-    let iframe = document.getElementById("bmHiddenFrame");
-    if(!iframe){
-      iframe = document.createElement("iframe");
-      iframe.name = "bmHiddenFrame"; iframe.id = "bmHiddenFrame"; iframe.style.display = "none";
-      document.body.appendChild(iframe);
-    }
-    const form = document.createElement("form");
-    form.method = "POST"; form.action = url; form.target = "bmHiddenFrame"; form.style.display = "none";
-    const input = document.createElement("input");
-    input.name = "payload"; input.value = JSON.stringify(payloadObj);
-    form.appendChild(input);
-    document.body.appendChild(form);
-    form.submit();
-    setTimeout(()=>{ form.remove(); resolve(true); }, 600);
+  return fetch(url, {
+    method: "POST",
+    mode: "no-cors", // response jadi "opaque" (tidak bisa dibaca), tapi request tetap terkirim & diproses server
+    headers: { "Content-Type": "text/plain;charset=utf-8" }, // hindari CORS preflight yang tidak didukung Apps Script
+    body: JSON.stringify(payloadObj),
+  }).catch(err=>{
+    console.error("Gagal kirim data ke server:", err);
+    throw err;
   });
 }
 

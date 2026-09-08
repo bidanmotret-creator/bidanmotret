@@ -1506,30 +1506,33 @@ function calcHarga(){
 
 /* ---------------- TANYA PROPS INI BELI DIMANA ---------------- */
 /*
-   Kirim pertanyaan TANPA fetch()/XHR (supaya tidak kena CSP connect-src
-   di platform seperti Scalev/Tribelio): pakai <form> yang di-submit ke
-   iframe tersembunyi. Ini dianggap navigasi form biasa oleh browser,
-   diatur oleh 'form-action' CSP (biasanya lebih longgar), bukan
-   'connect-src'. Lihat blok komentar Apps Script di atas untuk doPost().
+   Kirim data besar (foto base64) via fetch() dengan mode "no-cors".
+   Sebelumnya bagian ini pakai <form> ke iframe tersembunyi untuk menyiasati
+   CSP connect-src di Scalev/Tribelio — tapi cara itu kadang kena 403 dari
+   Google (endpoint script.googleusercontent.com/macros/echo menolak
+   navigasi form POST tertentu). Sekarang karena halaman ini dihosting
+   sendiri di Vercel (domain sendiri, tanpa CSP pembatas), fetch() biasa
+   jauh lebih stabil. mode:"no-cors" dipakai supaya browser tidak
+   memblokir karena Apps Script tidak selalu mengirim header CORS yang
+   pas — konsekuensinya kita tidak bisa membaca response langsung (makanya
+   endpoint yang perlu hasil, seperti upload gambar, pakai pola
+   kirim-lalu-polling lewat action=getUploadResult, lihat uploadProductImage()).
+
+   CATATAN kalau file ini dipakai lagi di Scalev (bukan Vercel): fetch()
+   akan diblokir CSP connect-src Scalev. Untuk kasus itu, kembalikan ke
+   versi <form> ke iframe tersembunyi (ada di riwayat percakapan sebelumnya).
 */
 const ASK_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2k8NJFbx1ZspwUKt4JhMxFriNyLn8_OZc5Zlm60ogpSy-Te0v_ZmGnzr57Y1jFxBwGw/exec"; // <-- isi dengan URL Web App Apps Script Anda (boleh sama dengan APPS_SCRIPT_URL jika satu project)
 
 function submitViaHiddenForm(url, payloadObj){
-  return new Promise((resolve)=>{
-    let iframe = document.getElementById("bmHiddenFrame");
-    if(!iframe){
-      iframe = document.createElement("iframe");
-      iframe.name = "bmHiddenFrame"; iframe.id = "bmHiddenFrame"; iframe.style.display = "none";
-      document.body.appendChild(iframe);
-    }
-    const form = document.createElement("form");
-    form.method = "POST"; form.action = url; form.target = "bmHiddenFrame"; form.style.display = "none";
-    const input = document.createElement("input");
-    input.name = "payload"; input.value = JSON.stringify(payloadObj);
-    form.appendChild(input);
-    document.body.appendChild(form);
-    form.submit();
-    setTimeout(()=>{ form.remove(); resolve(true); }, 600);
+  return fetch(url, {
+    method: "POST",
+    mode: "no-cors", // response jadi "opaque" (tidak bisa dibaca), tapi request tetap terkirim & diproses server
+    headers: { "Content-Type": "text/plain;charset=utf-8" }, // hindari CORS preflight yang tidak didukung Apps Script
+    body: JSON.stringify(payloadObj),
+  }).catch(err=>{
+    console.error("Gagal kirim data ke server:", err);
+    throw err;
   });
 }
 
