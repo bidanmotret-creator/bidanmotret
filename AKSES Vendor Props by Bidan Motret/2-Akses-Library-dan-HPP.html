@@ -263,8 +263,44 @@ textarea:focus{border-color:var(--clay)}
       <button class="tab-btn" id="btn-ask" onclick="showView('ask')">Tanya Props</button>
       <button class="tab-btn" id="btn-calc" onclick="showView('calc')">Kalkulator Harga Foto Bayi</button>
       <button class="tab-btn" id="btn-admin" onclick="showView('admin')" style="display:none">Admin</button>
+      <button class="tab-btn" onclick="openGuide()" style="border-color:var(--clay);color:var(--clay)">❓ Cara Pakai</button>
     </div>
     <div class="status" id="dataStatus">Memuat data…</div>
+  </div>
+</div>
+
+<!-- ============ PANDUAN PENGGUNAAN (modal) ============ -->
+<div id="guideOverlay" class="gate-overlay hidden">
+  <div class="gate-card" style="max-width:520px;max-height:85vh;overflow-y:auto">
+    <span class="badge">PANDUAN</span>
+    <h2 class="gate-title">Cara Pakai Website Ini</h2>
+
+    <div style="margin:16px 0">
+      <b>1. Library Perlengkapan</b>
+      <p class="gate-sub" style="margin:4px 0 0">Cari/filter perlengkapan sesuai kategori, prioritas, atau budget. Klik tombol bulat (+) di foto untuk menandai "sudah dimiliki" — otomatis masuk ke Checklist, dan sisanya jadi estimasi Wishlist.</p>
+    </div>
+    <div style="margin:16px 0">
+      <b>🎯 Rekomendasi Sesuai Budget</b>
+      <p class="gate-sub" style="margin:4px 0 0">Masukkan angka budget Anda, sistem otomatis menyusun kombinasi perlengkapan prioritas yang paling pas dengan budget itu.</p>
+    </div>
+    <div style="margin:16px 0">
+      <b>2. HPP Produk Pendukung</b>
+      <p class="gate-sub" style="margin:4px 0 0">Lihat daftar harga cetak foto, bingkai, dll beserta HPP, harga jual, profit, dan margin. Bisa dicari dan diurutkan per kolom. Ada juga kalkulator manual (opsional) untuk produk yang belum ada di daftar.</p>
+    </div>
+    <div style="margin:16px 0">
+      <b>3. Tanya Props</b>
+      <p class="gate-sub" style="margin:4px 0 0">Lihat props menarik tapi tidak tahu belinya dimana? Upload fotonya, tulis pertanyaan, admin akan membalas. Cek balasannya lewat tombol "Cek Jawaban".</p>
+    </div>
+    <div style="margin:16px 0">
+      <b>4. Kalkulator Harga Foto Bayi</b>
+      <p class="gate-sub" style="margin:4px 0 0">Pilih kondisi bisnis Anda di tiap faktor (pengalaman, peralatan, dll), sistem otomatis menghitung rekomendasi harga jasa foto untuk 1-4 pilihan tema.</p>
+    </div>
+    <div style="margin:16px 0;background:var(--soft);border-radius:10px;padding:12px">
+      <b>💡 Tips:</b>
+      <p class="gate-sub" style="margin:4px 0 0">Checklist dan riwayat pertanyaan Anda tersimpan otomatis berdasarkan nomor WhatsApp yang didaftarkan — bisa dibuka lagi kapan saja dari HP/laptop manapun asal login dengan nomor yang sama.</p>
+    </div>
+
+    <button class="submitbtn" onclick="closeGuide()">Mengerti, Mulai Pakai</button>
   </div>
 </div>
 
@@ -622,86 +658,12 @@ textarea:focus{border-color:var(--clay)}
 
 <script>
 /* =========================================================================
-   SUMBER DATA — GOOGLE SHEETS via APPS SCRIPT (metode JSONP)
-   =========================================================================
-   Kenapa JSONP, bukan fetch()?
-   Halaman ini sering ditempel di platform seperti Scalev/Tribelio yang
-   menerapkan Content-Security-Policy sendiri pada domain mereka. CSP itu
-   membatasi 'connect-src' (dipakai oleh fetch/XHR) ke daftar domain
-   tertentu saja, dan biasanya TIDAK bisa ditambah oleh kita karena
-   dikontrol oleh platform, bukan oleh halaman ini — itulah sebab error
-   "Refused to connect... violates Content Security Policy" saat memakai
-   fetch() ke script.google.com.
-   JSONP memuat data lewat tag <script src="..."> (bukan fetch), yang
-   diatur oleh 'script-src', bukan 'connect-src' — sehingga tetap bisa
-   berjalan meski platform membatasi connect-src.
-
-   1. Buat Google Spreadsheet dengan 2 sheet: "Items" dan "HPPComponents".
-   2. Di Extensions > Apps Script, buat Web App dengan kode berikut:
-
-      function doGet(e) {
-        var callback = e.parameter.callback;
-        var result;
-        if (e.parameter.action === 'getAnswer') {
-          result = getAnswerById(e.parameter.id);
-        } else {
-          var ss = SpreadsheetApp.getActiveSpreadsheet();
-          result = {
-            items: sheetToJson(ss.getSheetByName('Items')),
-            hpp:   sheetToJson(ss.getSheetByName('HPPComponents'))
-          };
-        }
-        var text = JSON.stringify(result);
-        if (callback) {
-          return ContentService.createTextOutput(callback + '(' + text + ');')
-            .setMimeType(ContentService.MimeType.JAVASCRIPT);
-        }
-        return ContentService.createTextOutput(text).setMimeType(ContentService.MimeType.JSON);
-      }
-
-      function getAnswerById(id) {
-        var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('PropsQuestions');
-        var rows = sheet.getDataRange().getValues();
-        for (var i = 1; i < rows.length; i++) {
-          if (rows[i][0] === id) {
-            return { found: true, status: rows[i][5], answer: rows[i][4] };
-          }
-        }
-        return { found: false };
-      }
-
-      function doPost(e) {
-        // Data dikirim lewat form (bukan fetch) supaya tidak kena CSP juga —
-        // lihat submitAsk() di bawah. Isinya ada di e.parameter.payload.
-        var data = JSON.parse(e.parameter.payload);
-        var ss = SpreadsheetApp.getActiveSpreadsheet();
-        var sheet = ss.getSheetByName('PropsQuestions');
-        var folder = DriveApp.getFolderById('ISI_FOLDER_ID_DRIVE');
-        var blob = Utilities.newBlob(
-          Utilities.base64Decode(data.image.split(',')[1]), 'image/jpeg', data.id + '.jpg'
-        );
-        var file = folder.createFile(blob);
-        sheet.appendRow([data.id, new Date(), data.question, file.getUrl(), '', 'Menunggu jawaban']);
-        return ContentService.createTextOutput('ok');
-      }
-
-      function sheetToJson(sheet){
-        var data = sheet.getDataRange().getValues();
-        var headers = data.shift();
-        return data.map(function(row){
-          var obj = {};
-          headers.forEach(function(h,i){ obj[h] = row[i]; });
-          return obj;
-        });
-      }
-
-   3. Deploy > New deployment > Web app > Execute as: Me, Access: Anyone.
-   4. Tempel URL Web App di APPS_SCRIPT_URL (dan ASK_APPS_SCRIPT_URL, bisa
-      sama) di bawah ini.
-   Jika URL kosong atau gagal dimuat, halaman otomatis memakai data contoh
-   (fallbackItems) supaya tetap bisa dipakai.
+   KONFIGURASI — cukup isi APPS_SCRIPT_URL di bawah ini (satu tempat saja).
+   Ambil dari: Apps Script > Deploy > Manage deployments > URL yang
+   berakhiran /exec. Kalau kosong atau gagal dimuat, halaman otomatis
+   memakai data contoh (fallbackItems) supaya tetap bisa dipakai.
    ========================================================================= */
-const APPS_SCRIPT_URL = "https://script.google.com/u/0/home/projects/1YAVg2sBL8WLwbPsuZcsqQbCQa3Zpy9W86AxTm03grz8XOafNib7XtDX3/edit"; // <-- isi dengan URL Web App Apps Script Anda
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2k8NJFbx1ZspwUKt4JhMxFriNyLn8_OZc5Zlm60ogpSy-Te0v_ZmGnzr57Y1jFxBwGw/exec";
 const ADMIN_WA_NUMBER = "6285167542641";
 
 /* Memuat <script src="url?callback=nama_fungsi"> lalu menunggu Apps Script
@@ -710,15 +672,38 @@ const ADMIN_WA_NUMBER = "6285167542641";
 function jsonp(url, timeoutMs){
   return new Promise((resolve, reject)=>{
     const cbName = "bm_cb_" + Date.now() + "_" + Math.floor(Math.random()*1e6);
-    let done = false;
-    window[cbName] = (data)=>{ done = true; cleanup(); resolve(data); };
+    let settled = false;
+    window[cbName] = (data)=>{
+      if(settled) return; // sudah timeout duluan, respons telat dari Apps Script diabaikan diam-diam
+      settled = true;
+      resolve(data);
+      scheduleFullCleanup();
+    };
     const script = document.createElement("script");
     const sep = url.includes("?") ? "&" : "?";
     script.src = url + sep + "callback=" + cbName;
-    script.onerror = ()=>{ if(!done){ cleanup(); reject(new Error("JSONP gagal dimuat")); } };
-    function cleanup(){ delete window[cbName]; script.remove(); }
+    script.onerror = ()=>{
+      if(settled) return;
+      settled = true;
+      reject(new Error("JSONP gagal dimuat"));
+      scheduleFullCleanup();
+    };
+    function scheduleFullCleanup(){
+      // Jangan hapus window[cbName] langsung — kalau Apps Script lagi "cold start"
+      // (lambat, bisa >10 detik), respons yang telat masih bisa nyampe dan akan
+      // error "X is not defined" kalau nama fungsinya sudah dihapus. Biarkan dulu
+      // beberapa saat sebagai no-op sebelum benar-benar dibersihkan.
+      setTimeout(()=>{ window[cbName] = ()=>{}; script.remove(); }, 500);
+      setTimeout(()=>{ delete window[cbName]; }, 30000);
+    }
     document.body.appendChild(script);
-    setTimeout(()=>{ if(!done){ cleanup(); reject(new Error("JSONP timeout")); } }, timeoutMs || 10000);
+    setTimeout(()=>{
+      if(settled) return;
+      settled = true;
+      window[cbName] = ()=>{}; // respons yang datang setelah timeout tidak akan error
+      reject(new Error("JSONP timeout"));
+      setTimeout(()=>{ script.remove(); delete window[cbName]; }, 30000);
+    }, timeoutMs || 20000); // dinaikkan dari 10s -> 20s karena Apps Script bisa lambat saat "cold start"
   });
 }
 
@@ -756,7 +741,19 @@ async function loadRemoteData(){
     const json = await jsonp(APPS_SCRIPT_URL);
     if(Array.isArray(json.items) && json.items.length){
       items = json.items
-        .filter(x => x.name && String(x.name).trim() !== "") // buang baris kosong/header kategori
+        .map(x => {
+          // Beberapa kategori (VENDOR PERLENGKAPAN, EDITOR FOTO, MENTOR
+          // FOTOGRAPHER NEWBORN) tidak mengisi kolom "name" — nama/keterangan
+          // aslinya ada di SPESIALIS atau ALAMAT. Fallback ini supaya baris
+          // itu tetap muncul, bukan malah dianggap kosong dan dibuang.
+          const resolvedName = (x.name && String(x.name).trim())
+            || (x.SPESIALIS && String(x.SPESIALIS).trim())
+            || (x["Nama Vendor"] && String(x["Nama Vendor"]).trim())
+            || (x.ALAMAT && String(x.ALAMAT).trim())
+            || "";
+          return { ...x, name: resolvedName };
+        })
+        .filter(x => x.name && String(x.name).trim() !== "") // buang baris yang benar2 tidak ada info sama sekali
         .map((x, i) => {
           // id dari sheet sering kosong -> pakai index sebagai id unik supaya
           // checklist per-item tidak "ketiban" satu sama lain (bug ceklis semua terpilih)
@@ -899,9 +896,21 @@ function initGate(){
     document.getElementById("gateOverlay").classList.add("hidden");
     syncOwnedFromServer(session.phone);
     updateVerifyBanner(session);
+    maybeShowGuideAuto();
     return;
   }
   document.getElementById("gateOverlay").classList.remove("hidden");
+}
+
+function openGuide(){ document.getElementById("guideOverlay").classList.remove("hidden"); }
+function closeGuide(){
+  document.getElementById("guideOverlay").classList.add("hidden");
+  localStorage.setItem("bm_seen_guide", "1");
+}
+function maybeShowGuideAuto(){
+  if(!localStorage.getItem("bm_seen_guide")){
+    setTimeout(openGuide, 400); // beri jeda kecil supaya tidak tabrakan animasi dgn gerbang login
+  }
 }
 
 function updateVerifyBanner(session){
@@ -938,15 +947,18 @@ function submitGate(){
         document.getElementById("gateOverlay").classList.add("hidden");
         syncOwnedFromServer(phone);
         updateVerifyBanner(session);
+        maybeShowGuideAuto();
       })
       .catch(err=>{
         console.error(err);
         saveSession({ name, phone, email, verified: false });
         document.getElementById("gateOverlay").classList.add("hidden");
+        maybeShowGuideAuto();
       });
   }else{
     saveSession({ name, phone, email, verified: true });
     document.getElementById("gateOverlay").classList.add("hidden");
+    maybeShowGuideAuto();
   }
 }
 
@@ -1135,17 +1147,18 @@ function uploadProductImage(dataUrl){
     submitViaHiddenForm(APPS_SCRIPT_URL, { action:"adminUploadImage", pass:adminPass, image:dataUrl, uploadId })
       .then(()=>{
         let attempts = 0;
+        const maxAttempts = 20; // ~40 detik total, cukup toleran untuk Apps Script cold start
         const poll = ()=>{
           attempts++;
-          jsonp(`${APPS_SCRIPT_URL}?action=getUploadResult&id=${uploadId}`, 8000)
+          jsonp(`${APPS_SCRIPT_URL}?action=getUploadResult&id=${uploadId}`, 10000)
             .then(json=>{
               if(json.found) resolve(json.url);
-              else if(attempts < 15) setTimeout(poll, 1200);
+              else if(attempts < maxAttempts) setTimeout(poll, 2000);
               else reject(new Error("Timeout menunggu upload"));
             })
-            .catch(()=>{ if(attempts < 15) setTimeout(poll, 1200); else reject(new Error("Gagal polling upload")); });
+            .catch(()=>{ if(attempts < maxAttempts) setTimeout(poll, 2000); else reject(new Error("Gagal polling upload")); });
         };
-        setTimeout(poll, 1500); // beri waktu server memproses upload dulu
+        setTimeout(poll, 2000); // beri waktu server memproses upload dulu
       })
       .catch(reject);
   });
@@ -1506,33 +1519,38 @@ function calcHarga(){
 
 /* ---------------- TANYA PROPS INI BELI DIMANA ---------------- */
 /*
-   Kirim data besar (foto base64) via fetch() dengan mode "no-cors".
-   Sebelumnya bagian ini pakai <form> ke iframe tersembunyi untuk menyiasati
-   CSP connect-src di Scalev/Tribelio — tapi cara itu kadang kena 403 dari
-   Google (endpoint script.googleusercontent.com/macros/echo menolak
-   navigasi form POST tertentu). Sekarang karena halaman ini dihosting
-   sendiri di Vercel (domain sendiri, tanpa CSP pembatas), fetch() biasa
-   jauh lebih stabil. mode:"no-cors" dipakai supaya browser tidak
-   memblokir karena Apps Script tidak selalu mengirim header CORS yang
-   pas — konsekuensinya kita tidak bisa membaca response langsung (makanya
-   endpoint yang perlu hasil, seperti upload gambar, pakai pola
-   kirim-lalu-polling lewat action=getUploadResult, lihat uploadProductImage()).
+   PENTING — kenapa pakai <form> ke iframe tersembunyi, BUKAN fetch():
+   Google Apps Script me-redirect response /exec lewat
+   script.googleusercontent.com/macros/echo. Saat redirect itu diikuti oleh
+   fetch(), browser otomatis MENGUBAH method POST jadi GET dan MEMBUANG
+   body-nya (perilaku standar HTTP redirect 302 di spesifikasi fetch) — jadi
+   doPost() di server tidak pernah benar-benar menerima data, walau di
+   browser fetch()-nya terlihat "berhasil" (karena mode:no-cors membuat
+   response jadi opaque, tidak pernah melempar error). Ini yang menyebabkan
+   data kadang tidak masuk ke Sheet padahal UI bilang "terkirim".
 
-   CATATAN kalau file ini dipakai lagi di Scalev (bukan Vercel): fetch()
-   akan diblokir CSP connect-src Scalev. Untuk kasus itu, kembalikan ke
-   versi <form> ke iframe tersembunyi (ada di riwayat percakapan sebelumnya).
+   Form yang di-submit ke iframe (navigasi asli, bukan fetch) tidak kena
+   masalah downgrade method ini, jadi ini metode yang lebih bisa diandalkan
+   untuk kirim data besar (foto base64) ke Apps Script.
 */
-const ASK_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2k8NJFbx1ZspwUKt4JhMxFriNyLn8_OZc5Zlm60ogpSy-Te0v_ZmGnzr57Y1jFxBwGw/exec"; // <-- isi dengan URL Web App Apps Script Anda (boleh sama dengan APPS_SCRIPT_URL jika satu project)
-
 function submitViaHiddenForm(url, payloadObj){
-  return fetch(url, {
-    method: "POST",
-    mode: "no-cors", // response jadi "opaque" (tidak bisa dibaca), tapi request tetap terkirim & diproses server
-    headers: { "Content-Type": "text/plain;charset=utf-8" }, // hindari CORS preflight yang tidak didukung Apps Script
-    body: JSON.stringify(payloadObj),
-  }).catch(err=>{
-    console.error("Gagal kirim data ke server:", err);
-    throw err;
+  return new Promise((resolve)=>{
+    let iframe = document.getElementById("bmHiddenFrame");
+    if(!iframe){
+      iframe = document.createElement("iframe");
+      iframe.name = "bmHiddenFrame"; iframe.id = "bmHiddenFrame"; iframe.style.display = "none";
+      document.body.appendChild(iframe);
+    }
+    const form = document.createElement("form");
+    form.method = "POST"; form.action = url; form.target = "bmHiddenFrame"; form.style.display = "none";
+    const input = document.createElement("input");
+    input.name = "payload"; input.value = JSON.stringify(payloadObj);
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    // Beri jeda lebih panjang (server perlu waktu memproses gambar + Drive
+    // upload sebelum request ini "dianggap selesai" oleh sisi client).
+    setTimeout(()=>{ form.remove(); resolve(true); }, 1500);
   });
 }
 
@@ -1602,9 +1620,9 @@ async function submitAsk(){
     phone: session.phone || "", name: session.name || "", email: session.email || ""
   };
 
-  if(ASK_APPS_SCRIPT_URL){
+  if(APPS_SCRIPT_URL){
     try{
-      await submitViaHiddenForm(ASK_APPS_SCRIPT_URL, entry);
+      await submitViaHiddenForm(APPS_SCRIPT_URL, entry);
       statusEl.textContent = "Pertanyaan terkirim ke admin. Cek status jawaban di daftar bawah.";
     }catch(err){
       console.error(err);
@@ -1631,12 +1649,12 @@ async function checkAnswer(id){
   const history = getQaHistory();
   const item = history.find(x=>x.id===id);
   if(!item) return;
-  if(!ASK_APPS_SCRIPT_URL){
+  if(!APPS_SCRIPT_URL){
     item.status = "Apps Script belum diisi — hubungi admin manual via WA";
     saveQaHistory(history); renderQaList(); return;
   }
   try{
-    const json = await jsonp(`${ASK_APPS_SCRIPT_URL}?action=getAnswer&id=${encodeURIComponent(id)}`, 8000);
+    const json = await jsonp(`${APPS_SCRIPT_URL}?action=getAnswer&id=${encodeURIComponent(id)}`, 8000);
     if(json.found){
       item.status = json.status || "Terjawab";
       item.answer = json.answer || "";
