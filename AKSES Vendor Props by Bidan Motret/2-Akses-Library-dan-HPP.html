@@ -657,7 +657,7 @@ textarea:focus{border-color:var(--clay)}
    Jika URL kosong atau gagal dimuat, halaman otomatis memakai data contoh
    (fallbackItems) supaya tetap bisa dipakai.
    ========================================================================= */
-const APPS_SCRIPT_URL = ""; // <-- isi dengan URL Web App Apps Script Anda
+const APPS_SCRIPT_URL = "https://script.google.com/u/0/home/projects/1YAVg2sBL8WLwbPsuZcsqQbCQa3Zpy9W86AxTm03grz8XOafNib7XtDX3/edit"; // <-- isi dengan URL Web App Apps Script Anda
 const ADMIN_WA_NUMBER = "6285167542641";
 
 /* Memuat <script src="url?callback=nama_fungsi"> lalu menunggu Apps Script
@@ -1317,7 +1317,7 @@ function calcHarga(){
    diatur oleh 'form-action' CSP (biasanya lebih longgar), bukan
    'connect-src'. Lihat blok komentar Apps Script di atas untuk doPost().
 */
-const ASK_APPS_SCRIPT_URL = ""; // <-- isi dengan URL Web App Apps Script Anda (boleh sama dengan APPS_SCRIPT_URL jika satu project)
+const ASK_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2k8NJFbx1ZspwUKt4JhMxFriNyLn8_OZc5Zlm60ogpSy-Te0v_ZmGnzr57Y1jFxBwGw/exec"; // <-- isi dengan URL Web App Apps Script Anda (boleh sama dengan APPS_SCRIPT_URL jika satu project)
 
 function submitViaHiddenForm(url, payloadObj){
   return new Promise((resolve)=>{
